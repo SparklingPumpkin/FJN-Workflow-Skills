@@ -1,0 +1,138 @@
+{
+  "schema_version": 2,
+  "stage": "solution_routing",
+  "status": "completed",
+  "updated_at": "2026-09-09T03:27:56+00:00",
+  "summary": "Route the ViShadow silent-drop omission fix through a gated skill update with a cross-stage coverage guard.",
+  "solution_routing": {
+    "task_mode": "create-or-update",
+    "desired_outcome": "Prevent high-relevance scouting hits such as ViShadow from disappearing before candidate admission, and document the missed-anchor recovery rule.",
+    "trigger_phrases": [
+      "missed paper",
+      "遗漏论文",
+      "补充调研",
+      "collection rule expansion"
+    ],
+    "scope": "workspace",
+    "selected_primitives": [
+      "skill"
+    ],
+    "artifact_plan": [
+      {
+        "primitive": "skill",
+        "path": "SKILL.md",
+        "purpose": "Define mandatory scouting-hit disposition reconciliation and the ViShadow learned omission rule.",
+        "embedded_primitives": []
+      }
+    ],
+    "supporting_resources": [
+      "templates/stage_manifest.json",
+      "scripts/research_flow_next.py",
+      "scripts/research_flow_guard.py",
+      "tests/test_research_flow_guard.py"
+    ],
+    "runtime_wiring": [
+      "scouting_evidence.candidate_leads is reconciled against candidate_admission.scouting_dispositions by research_flow_guard.py"
+    ],
+    "risk_factors": [
+      "Existing stage-gated workflow",
+      "Known omission history",
+      "Guard and manifest schema migration",
+      "Existing uncommitted InfiniDepth rules must be preserved"
+    ],
+    "risk_assessment": {
+      "bundled_resources_or_scripts": true,
+      "requires_repository_exploration": true,
+      "migrates_existing_customization": true,
+      "changes_tools_or_trust": false,
+      "handles_secrets_or_untrusted_input": false,
+      "has_external_side_effects": false,
+      "long_running_or_stateful": true,
+      "omission_history": true,
+      "requires_hard_gates": true,
+      "executes_commands": true,
+      "destructive_operations": false,
+      "writes_outside_workspace": false,
+      "network_access": true,
+      "expands_permissions_or_approvals": false
+    },
+    "workflow_profile": "gated",
+    "workflow_profile_override_reason": "",
+    "selected_stages": [
+      "solution_routing",
+      "scope_intake",
+      "upstream_baseline",
+      "migration_audit",
+      "local_contract",
+      "asset_plan",
+      "implementation",
+      "validation",
+      "handoff"
+    ],
+    "routing_rationale": "Minimum safe profile is gated: long_running_or_stateful; omission_history; requires_hard_gates"
+  },
+  "scope_intake": {
+    "target_name": "fjn-research-flow",
+    "target_dir": "/mnt/data/fjn/FJN-Agent/skills/fjn-research-flow",
+    "purpose": "",
+    "trigger_phrases": [],
+    "expected_users": "",
+    "selected_primitives": [],
+    "scope": "",
+    "composition_reason": ""
+  },
+  "upstream_baseline": {
+    "selected_primitives_checked": [],
+    "locations_checked": false,
+    "discovery_and_invocation_checked": false,
+    "schema_checked": false,
+    "security_checked": false,
+    "notes": ""
+  },
+  "local_contract": {
+    "local_rules": [],
+    "needs_stage_gating": false,
+    "needs_guard_script": false,
+    "needs_hooks": false,
+    "needs_mcp": false,
+    "state_location": "",
+    "guard_policy": "",
+    "approval_and_secret_policy": ""
+  },
+  "asset_plan": {
+    "artifacts": [],
+    "supporting_resources": [],
+    "validation_commands": []
+  },
+  "implementation": {
+    "files_created": [],
+    "files_updated": [],
+    "artifacts_implemented": [],
+    "runtime_wiring_implemented": []
+  },
+  "validation": {
+    "commands_run": [],
+    "artifact_checks": [],
+    "runtime_wiring_check": "",
+    "security_check": "",
+    "known_failures": []
+  },
+  "handoff": {
+    "usage": "",
+    "selected_primitives": [],
+    "workflow_profile": "",
+    "stages_run": [],
+    "changed_files": [],
+    "validation_summary": "",
+    "activation_or_approval_steps": [],
+    "known_gaps": [],
+    "next_maintenance_step": ""
+  },
+  "migration_audit": {
+    "source_skill_or_workflow": "",
+    "retained_rules": [],
+    "removed_rules": [],
+    "new_hard_gates": [],
+    "compatibility_notes": ""
+  }
+}

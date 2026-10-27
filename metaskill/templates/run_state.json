@@ -1,0 +1,36 @@
+{
+  "schema_version": 2,
+  "skill": "metaskill",
+  "target_customization_root": "replace-with-target-customization-root",
+  "created_at": "replace-with-iso8601",
+  "updated_at": "replace-with-iso8601",
+  "active_stage": "solution_routing",
+  "stage_order": [
+    "solution_routing",
+    "scope_intake",
+    "upstream_baseline",
+    "migration_audit",
+    "local_contract",
+    "asset_plan",
+    "implementation",
+    "validation",
+    "handoff"
+  ],
+  "workflow_profile": null,
+  "selected_primitives": [],
+  "selected_stages": [
+    "solution_routing"
+  ],
+  "stages": {
+    "solution_routing": { "status": "in_progress", "guard_status": "not_run" },
+    "scope_intake": { "status": "not_started", "guard_status": "not_run" },
+    "upstream_baseline": { "status": "not_started", "guard_status": "not_run" },
+    "migration_audit": { "status": "not_started", "guard_status": "not_run" },
+    "local_contract": { "status": "not_started", "guard_status": "not_run" },
+    "asset_plan": { "status": "not_started", "guard_status": "not_run" },
+    "implementation": { "status": "not_started", "guard_status": "not_run" },
+    "validation": { "status": "not_started", "guard_status": "not_run" },
+    "handoff": { "status": "not_started", "guard_status": "not_run" }
+  },
+  "guard_history": []
+}

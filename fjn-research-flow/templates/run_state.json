@@ -1,0 +1,30 @@
+{
+  "schema_version": 1,
+  "skill": "fjn-research-flow",
+  "run_id": "replace-with-run-id",
+  "run_root": "replace-with-output-directory",
+  "created_at": "replace-with-iso8601",
+  "updated_at": "replace-with-iso8601",
+  "active_stage": "anchor_scope",
+  "stage_order": [
+    "anchor_scope",
+    "operation_guide",
+    "scouting_evidence",
+    "frontier_omission_audit",
+    "candidate_admission",
+    "metadata_consolidation",
+    "analysis_notes",
+    "final_report"
+  ],
+  "stages": {
+    "anchor_scope": { "status": "not_started", "guard_status": "not_run" },
+    "operation_guide": { "status": "not_started", "guard_status": "not_run" },
+    "scouting_evidence": { "status": "not_started", "guard_status": "not_run" },
+    "frontier_omission_audit": { "status": "not_started", "guard_status": "not_run" },
+    "candidate_admission": { "status": "not_started", "guard_status": "not_run" },
+    "metadata_consolidation": { "status": "not_started", "guard_status": "not_run" },
+    "analysis_notes": { "status": "not_started", "guard_status": "not_run" },
+    "final_report": { "status": "not_started", "guard_status": "not_run" }
+  },
+  "guard_history": []
+}

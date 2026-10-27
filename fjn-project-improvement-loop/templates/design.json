@@ -1,0 +1,56 @@
+{
+  "schema_version": 2,
+  "round_id": "round-001",
+  "base_tree_digest": "",
+  "problem_analysis": {
+    "observations": [
+      {
+        "statement": "",
+        "evidence": []
+      }
+    ],
+    "root_cause": {
+      "claim": "",
+      "mechanism": "",
+      "supporting_evidence": [],
+      "falsification_condition": ""
+    },
+    "alternative_explanations": [
+      {
+        "id": "ALT-001",
+        "claim": "",
+        "distinct_prediction": "",
+        "discriminating_observation": ""
+      }
+    ],
+    "decisive_unknown": {
+      "question": "",
+      "why_decisive": "",
+      "cheapest_probe": ""
+    }
+  },
+  "solutions": [
+    {
+      "id": "SOL-001",
+      "kind": "optimize",
+      "status": "proposed",
+      "acceptance_ids": ["ACC-001"],
+      "claim": "",
+      "rationale": "",
+      "change_or_test": "",
+      "confounds_and_controls": "",
+      "expected_observation": "",
+      "falsification_condition": "",
+      "next_if_supported": "",
+      "next_if_refuted": "",
+      "tree_relation": {
+        "type": "new_root",
+        "parent_id": null,
+        "rationale": "",
+        "evidence": []
+      }
+    }
+  ],
+  "selection_reason": "",
+  "deferred": []
+}

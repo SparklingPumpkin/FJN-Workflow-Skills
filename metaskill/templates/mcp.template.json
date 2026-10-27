@@ -1,0 +1,9 @@
+{
+  "servers": {
+    "replaceWithServerName": {
+      "type": "stdio",
+      "command": "replace-with-reviewed-executable",
+      "args": []
+    }
+  }
+}

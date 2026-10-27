@@ -1,0 +1,16 @@
+{
+  "cli_form": "reports/validation.md::证明候选在完整数据上通过质量与安全门",
+  "stored_record": {
+    "reference": "reports/validation.md",
+    "claim": "证明候选在完整数据上通过质量与安全门",
+    "kind": "local_file",
+    "exists_when_recorded": true,
+    "sha256_when_recorded": "由控制器自动计算",
+    "recorded_at": "由控制器自动填写"
+  },
+  "policy": [
+    "每条证据必须同时说明来源和该来源证明的主张。",
+    "本地证据登记时必须存在。",
+    "不因相邻版本号、相似目录名或近期会话记忆推断版本承接关系。"
+  ]
+}

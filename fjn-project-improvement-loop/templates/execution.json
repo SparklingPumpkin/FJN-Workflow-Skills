@@ -1,0 +1,10 @@
+{
+  "schema_version": 2,
+  "round_id": "round-001",
+  "project_workflow": {
+    "project_root": "",
+    "guard_status": "not_checked",
+    "evidence": []
+  },
+  "bindings": []
+}

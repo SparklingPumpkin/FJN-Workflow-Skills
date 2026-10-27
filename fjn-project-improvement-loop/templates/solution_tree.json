@@ -1,0 +1,14 @@
+{
+  "schema_version": 2,
+  "updated_at": "replace-with-iso8601",
+  "root_problem": "",
+  "root_history": [],
+  "incumbent": {
+    "solution_id": null,
+    "project_workflow_ref": "",
+    "summary": "baseline",
+    "evidence": []
+  },
+  "nodes": [],
+  "failed_memory": []
+}

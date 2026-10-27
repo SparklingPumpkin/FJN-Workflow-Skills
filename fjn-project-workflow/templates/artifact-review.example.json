@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "run_id": "run-20261023T080000Z-probe",
+  "assessed_at": "2026-10-23T09:00:00Z",
+  "review_after": "2026-10-30T09:00:00Z",
+  "decision": "needs_review",
+  "reason": "实验已结束，但后续依赖尚未冻结，待核实",
+  "checks": {
+    "failed": {"value": true, "evidence": ["experiments/probe/report.md::固定验收未达标"]},
+    "no_future_use": {"value": "unknown", "evidence": ["experiments/probe/report.md::后续计划未冻结"]},
+    "not_historical_mainline": {"value": true, "evidence": ["docs/project-control/VERSION_LEDGER.md::未进入历史基线链"]},
+    "never_delivered": {"value": true, "evidence": ["experiments/probe/report.md::未固化交付"]},
+    "no_protected_dependents": {"value": "unknown", "evidence": ["experiments/probe/report.md::传递依赖未核实"]},
+    "reproducible": {"value": true, "evidence": ["experiments/probe/reproduce.sh::复现材料已核对，未复跑"]}
+  },
+  "preserve": ["experiments/probe/report.md", "experiments/probe/reproduce.sh"],
+  "files": []
+}

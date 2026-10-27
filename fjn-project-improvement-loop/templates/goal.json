@@ -1,0 +1,28 @@
+{
+  "schema_version": 2,
+  "project_root": "",
+  "updated_at": "replace-with-iso8601",
+  "goal": "",
+  "current_state": {
+    "summary": "",
+    "incumbent_ref": "",
+    "evidence": []
+  },
+  "acceptance_criteria": [
+    {
+      "id": "ACC-001",
+      "criterion": "",
+      "evaluation": "",
+      "hard": true,
+      "timing_requirement": null
+    }
+  ],
+  "constraints": [],
+  "budget": {
+    "max_rounds": 10,
+    "max_experiments": 30,
+    "max_wall_clock_hours": null,
+    "max_compute_hours": null,
+    "max_cost": null
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "schema_version": 2,
+  "round_id": "round-001",
+  "solution_results": [],
+  "acceptance_results": [
+    {
+      "acceptance_id": "ACC-001",
+      "passed": false,
+      "run_id": null,
+      "timing_status": "unverified",
+      "timing_measurement": null,
+      "observation": "",
+      "evidence": []
+    }
+  ],
+  "goal_met": false,
+  "incumbent_update": {
+    "action": "unchanged",
+    "solution_id": null,
+    "reason": ""
+  }
+}

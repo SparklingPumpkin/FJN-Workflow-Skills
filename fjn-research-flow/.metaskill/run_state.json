@@ -1,0 +1,162 @@
+{
+  "schema_version": 2,
+  "skill": "metaskill",
+  "target_customization_root": "/mnt/data/fjn/FJN-Agent/skills/fjn-research-flow",
+  "created_at": "2026-09-09T02:58:57+00:00",
+  "updated_at": "2026-09-09T03:31:59+00:00",
+  "active_stage": "handoff",
+  "stage_order": [
+    "solution_routing",
+    "scope_intake",
+    "upstream_baseline",
+    "migration_audit",
+    "local_contract",
+    "asset_plan",
+    "implementation",
+    "validation",
+    "handoff"
+  ],
+  "workflow_profile": "gated",
+  "selected_primitives": [
+    "skill"
+  ],
+  "selected_stages": [
+    "solution_routing",
+    "scope_intake",
+    "upstream_baseline",
+    "migration_audit",
+    "local_contract",
+    "asset_plan",
+    "implementation",
+    "validation",
+    "handoff"
+  ],
+  "stages": {
+    "solution_routing": {
+      "status": "completed",
+      "guard_status": "pass",
+      "last_guard_at": "2026-09-09T03:27:56+00:00",
+      "manifest_sha256": "675e01a8d5ea7879c310eaf6ca26506651ce22663db8d76f087ed0a6cb53f897"
+    },
+    "scope_intake": {
+      "status": "completed",
+      "guard_status": "pass",
+      "last_guard_at": "2026-09-09T03:28:35+00:00",
+      "manifest_sha256": "90ab985774d0ba06f070aeccc3fe1a496bc5dbc1a95ab4f0b0c20d237377e44b"
+    },
+    "upstream_baseline": {
+      "status": "completed",
+      "guard_status": "pass",
+      "last_guard_at": "2026-09-09T03:29:04+00:00",
+      "manifest_sha256": "5c27043bfe270f4784828c848b05fad1dc613cbd0a582e6a7e45a45b33a86905"
+    },
+    "migration_audit": {
+      "status": "completed",
+      "guard_status": "pass",
+      "last_guard_at": "2026-09-09T03:29:41+00:00",
+      "manifest_sha256": "b99ed5c402ae67fb882beecc9b7a1714f2004c899c09e15a001c0ebc390593bc"
+    },
+    "local_contract": {
+      "status": "completed",
+      "guard_status": "pass",
+      "last_guard_at": "2026-09-09T03:29:58+00:00",
+      "manifest_sha256": "3b30f8071cd7bebc2d2d84bb5052ffe2d4354ef8ac8374ca5f42711ca8324dab"
+    },
+    "asset_plan": {
+      "status": "completed",
+      "guard_status": "pass",
+      "last_guard_at": "2026-09-09T03:30:21+00:00",
+      "manifest_sha256": "11ae38651ae0668041fcbe7df42e9b3e31d371de3457708c581a6b147948013b"
+    },
+    "implementation": {
+      "status": "completed",
+      "guard_status": "pass",
+      "last_guard_at": "2026-09-09T03:30:45+00:00",
+      "manifest_sha256": "6caf693082b2aa4b916ec56375ffc59ffcbc078372746180aca1744fd63f9058"
+    },
+    "validation": {
+      "status": "completed",
+      "guard_status": "pass",
+      "last_guard_at": "2026-09-09T03:31:29+00:00",
+      "manifest_sha256": "d63999a85dd6f846d5a406d54ae610974e834bbb9542ac89b9086a1f106cfca8"
+    },
+    "handoff": {
+      "status": "completed",
+      "guard_status": "pass",
+      "last_guard_at": "2026-09-09T03:31:59+00:00",
+      "manifest_sha256": "92fceb5125b0a41f4653dd6266fb427592b97eadc464b8350f3c4c1393aff590"
+    }
+  },
+  "guard_history": [
+    {
+      "stage": "solution_routing",
+      "status": "pass",
+      "checked_at": "2026-09-09T02:59:52+00:00",
+      "errors": [],
+      "warnings": []
+    },
+    {
+      "stage": "solution_routing",
+      "status": "pass",
+      "checked_at": "2026-09-09T03:27:56+00:00",
+      "errors": [],
+      "warnings": []
+    },
+    {
+      "stage": "scope_intake",
+      "status": "pass",
+      "checked_at": "2026-09-09T03:28:35+00:00",
+      "errors": [],
+      "warnings": []
+    },
+    {
+      "stage": "upstream_baseline",
+      "status": "pass",
+      "checked_at": "2026-09-09T03:29:04+00:00",
+      "errors": [],
+      "warnings": []
+    },
+    {
+      "stage": "migration_audit",
+      "status": "pass",
+      "checked_at": "2026-09-09T03:29:41+00:00",
+      "errors": [],
+      "warnings": []
+    },
+    {
+      "stage": "local_contract",
+      "status": "pass",
+      "checked_at": "2026-09-09T03:29:58+00:00",
+      "errors": [],
+      "warnings": []
+    },
+    {
+      "stage": "asset_plan",
+      "status": "pass",
+      "checked_at": "2026-09-09T03:30:21+00:00",
+      "errors": [],
+      "warnings": []
+    },
+    {
+      "stage": "implementation",
+      "status": "pass",
+      "checked_at": "2026-09-09T03:30:45+00:00",
+      "errors": [],
+      "warnings": []
+    },
+    {
+      "stage": "validation",
+      "status": "pass",
+      "checked_at": "2026-09-09T03:31:29+00:00",
+      "errors": [],
+      "warnings": []
+    },
+    {
+      "stage": "handoff",
+      "status": "pass",
+      "checked_at": "2026-09-09T03:31:59+00:00",
+      "errors": [],
+      "warnings": []
+    }
+  ]
+}

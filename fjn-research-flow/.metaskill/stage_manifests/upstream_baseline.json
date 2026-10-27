@@ -1,0 +1,104 @@
+{
+  "schema_version": 2,
+  "stage": "upstream_baseline",
+  "status": "completed",
+  "updated_at": "2026-09-09T03:29:04+00:00",
+  "summary": "Verified the existing workspace Skill against current customization discovery, frontmatter, bundled-resource, and security requirements.",
+  "solution_routing": {
+    "task_mode": "create-or-update",
+    "desired_outcome": "",
+    "trigger_phrases": [],
+    "scope": "",
+    "selected_primitives": [],
+    "artifact_plan": [],
+    "supporting_resources": [],
+    "runtime_wiring": [],
+    "risk_factors": [],
+    "risk_assessment": {
+      "bundled_resources_or_scripts": false,
+      "requires_repository_exploration": false,
+      "migrates_existing_customization": false,
+      "changes_tools_or_trust": false,
+      "handles_secrets_or_untrusted_input": false,
+      "has_external_side_effects": false,
+      "long_running_or_stateful": false,
+      "omission_history": false,
+      "requires_hard_gates": false,
+      "executes_commands": false,
+      "destructive_operations": false,
+      "writes_outside_workspace": false,
+      "network_access": false,
+      "expands_permissions_or_approvals": false
+    },
+    "workflow_profile": "",
+    "workflow_profile_override_reason": "",
+    "selected_stages": [],
+    "routing_rationale": ""
+  },
+  "scope_intake": {
+    "target_name": "fjn-research-flow",
+    "target_dir": "/mnt/data/fjn/FJN-Agent/skills/fjn-research-flow",
+    "purpose": "",
+    "trigger_phrases": [],
+    "expected_users": "",
+    "selected_primitives": [],
+    "scope": "",
+    "composition_reason": ""
+  },
+  "upstream_baseline": {
+    "selected_primitives_checked": [
+      "skill"
+    ],
+    "locations_checked": true,
+    "discovery_and_invocation_checked": true,
+    "schema_checked": true,
+    "security_checked": true,
+    "notes": "Checked the VS Code agent-customization Skill guidance: SKILL.md remains under the supported FJN-Agent/skills/fjn-research-flow location; frontmatter name matches the folder and retains concrete trigger phrasing; scripts, templates, and tests remain bundled resources. No hooks, MCP configuration, secrets, trust changes, or permission expansion are introduced."
+  },
+  "local_contract": {
+    "local_rules": [],
+    "needs_stage_gating": false,
+    "needs_guard_script": false,
+    "needs_hooks": false,
+    "needs_mcp": false,
+    "state_location": "",
+    "guard_policy": "",
+    "approval_and_secret_policy": ""
+  },
+  "asset_plan": {
+    "artifacts": [],
+    "supporting_resources": [],
+    "validation_commands": []
+  },
+  "implementation": {
+    "files_created": [],
+    "files_updated": [],
+    "artifacts_implemented": [],
+    "runtime_wiring_implemented": []
+  },
+  "validation": {
+    "commands_run": [],
+    "artifact_checks": [],
+    "runtime_wiring_check": "",
+    "security_check": "",
+    "known_failures": []
+  },
+  "handoff": {
+    "usage": "",
+    "selected_primitives": [],
+    "workflow_profile": "",
+    "stages_run": [],
+    "changed_files": [],
+    "validation_summary": "",
+    "activation_or_approval_steps": [],
+    "known_gaps": [],
+    "next_maintenance_step": ""
+  },
+  "migration_audit": {
+    "source_skill_or_workflow": "",
+    "retained_rules": [],
+    "removed_rules": [],
+    "new_hard_gates": [],
+    "compatibility_notes": ""
+  }
+}

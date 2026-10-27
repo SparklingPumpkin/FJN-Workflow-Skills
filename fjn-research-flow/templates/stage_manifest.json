@@ -1,0 +1,143 @@
+{
+  "schema_version": 2,
+  "stage": "anchor_scope",
+  "status": "in_progress",
+  "updated_at": "replace-with-iso8601",
+  "summary": "",
+  "scope": {
+    "research_question": "",
+    "target_route": "",
+    "output_directory": "",
+    "time_windows": {
+      "main_window": "",
+      "recent_watch_window": "",
+      "mature_framework_window": ""
+    },
+    "candidate_boundaries": {
+      "method": "",
+      "platform": "",
+      "reference": "",
+      "non_fit": ""
+    }
+  },
+  "operation_guide": {
+    "search_batches": [],
+    "sources": [],
+    "variant_axes": [],
+    "query_axis_expansion": {
+      "problem_terms": [],
+      "representation_terms": [],
+      "mechanism_terms": [],
+      "application_terms": [],
+      "source_surface_terms": [],
+      "negative_or_boundary_terms": [],
+      "cross_product_templates": [],
+      "narrowness_risks": [],
+      "final_query_axes": [],
+      "pre_search_review": ""
+    },
+    "dedup_rules": [],
+    "quality_gates": [],
+    "completion_criteria": []
+  },
+  "scouting_evidence": {
+    "paper_searches": [],
+    "repository_searches": [],
+    "recent_window_checks": [],
+    "mature_framework_checks": [],
+    "variant_sweeps": [],
+    "reverse_output_representation_sweeps": [],
+    "candidate_leads": [],
+    "negative_findings": [],
+    "fallbacks_used": []
+  },
+  "frontier_omission_audit": {
+    "frontier_windows": {
+      "current_year": "",
+      "previous_year": "",
+      "recent_months": ""
+    },
+    "top_venue_sources_checked": [],
+    "official_source_checks": [],
+    "recent_window_queries": [],
+    "repository_created_date_sweeps": [],
+    "source_failures_and_fallbacks": [],
+    "staleness_diagnosis": "",
+    "premature_convergence_risk": "",
+    "display_filter_plan": "",
+    "missing_anchor_replay_checks": [],
+    "negative_frontier_findings": [],
+    "audit_file": "frontier_omission_audit.md"
+  },
+  "candidate_admission": {
+    "official_source_matrix": [],
+    "scouting_dispositions": [],
+    "candidates": []
+  },
+  "metadata_consolidation": {
+    "metadata_md": "metadata.md",
+    "metadata_json": "metadata.json",
+    "markdown_filter": "",
+    "markdown_display": {
+      "mode": "filtered",
+      "code_backed_gate": "",
+      "no_code_gate": "",
+      "popularity_gate": "",
+      "full_catalog_location": "metadata.json",
+      "filtered_out_count": "",
+      "override_reason": ""
+    },
+    "abstract_innovation": {
+      "json_field": "abstract_innovation",
+      "source_field": "abstract_innovation_source",
+      "status_field": "abstract_innovation_status",
+      "source_policy": "Prefer paper abstract from official or aggregator sources; if unavailable, use project page or README and mark the fallback explicitly.",
+      "missing_abstract_policy": "Do not infer detailed mechanisms from title-only evidence; write a conservative pending-abstract note.",
+      "markdown_column": "摘要创新点",
+      "markdown_columns": ["名称", "日期 / venue", "发表机构", "核心输出", "输入假设", "热门度", "摘要创新点"],
+      "removed_markdown_columns": ["生成模式", "状态 / 备注", "状态/备注"]
+    },
+    "platform_paper_association": {
+      "association_field": "paper_association",
+      "source_field": "paper_association_source",
+      "status_field": "paper_association_status",
+      "required_for_types": ["platform", "platform_tool"],
+      "allowed_statuses": [
+        "own_paper",
+        "own_paper_or_project_paper",
+        "related_paper",
+        "related_paper_or_publication_gate",
+        "no_formal_paper_found",
+        "paper_pending"
+      ],
+      "no_paper_statuses": ["no_formal_paper_found"],
+      "source_policy": "Check README, project page, Paper/arXiv/DOI/BibTeX links, and cited published-work dependencies before deciding paper association for any platform/tool entry.",
+      "no_paper_claim_policy": "Do not infer absence of a paper from platform/tool classification. Only write no-formal-paper wording after a checked-negative README/project/BibTeX/arXiv/DOI pass is recorded."
+    },
+    "sync_notes": ""
+  },
+  "analysis_notes": {
+    "not_applicable_reason": "",
+    "files": []
+  },
+  "final_report": {
+    "coverage_by_route": "",
+    "recent_results_summary": "",
+    "frontier_results_summary": "",
+    "official_source_summary": "",
+    "mature_framework_summary": "",
+    "variant_axes_searched": [],
+    "metadata_display_filter_summary": "",
+    "staleness_or_saturation_diagnosis": "",
+    "completion_blockers_checked": [],
+    "likely_omissions": [],
+    "recommended_next_phase": ""
+  },
+  "collection_rule_expansion": {
+    "missed_anchor": {},
+    "failure_diagnosis": "",
+    "new_query_axes": [],
+    "validation_queries": [],
+    "classification_caution": ""
+  }
+}

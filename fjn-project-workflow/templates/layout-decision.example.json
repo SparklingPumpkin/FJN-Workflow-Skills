@@ -1,0 +1,15 @@
+{
+  "scope_id": "mapanything",
+  "candidate_id": null,
+  "action": "new_child",
+  "target_path": "outputs/mapanything/depth-calibration/MA-v7-a",
+  "target_level": "candidate",
+  "parent_directory_id": "dir-0012",
+  "purpose": "验证在 MA-v7 当前基线上引入多帧深度一致性约束的独立候选。",
+  "reason": "该假设可独立验收，属于既有深度校准实验族，不应消耗新的主版本号。",
+  "alternatives_considered": [
+    "复用 MA-v7-b：拒绝，因为两者假设与验收标准不同。",
+    "建立新 experiment_family：拒绝，因为仍回答同一深度校准问题。"
+  ],
+  "override_reason": null
+}
