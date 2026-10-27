@@ -13,8 +13,8 @@ relative references remain valid.
 Remote: git@github.com:SparklingPumpkin/FJN-Workflow-Skills.git
 
 This repository can be cloned independently or used as the
-`skills/workflow-skills` submodule in FJN-Agent. The parent keeps the original
-`skills/<name>` paths as relative symlinks into the submodule.
+`skills/workflow-skills` submodule in FJN-Agent. Access each skill directly at
+`skills/workflow-skills/<name>/SKILL.md`; no outer `skills/<name>` aliases are kept.
 
 Clone FJN-Agent with `git clone --recurse-submodules`, or initialize this
 submodule in an existing checkout with:
