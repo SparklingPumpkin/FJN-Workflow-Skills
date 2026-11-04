@@ -31,6 +31,9 @@ def local_file(root, value):
 
 def validate_artifact_review(root, state, run_id, review):
     """Validate prospective marks, not present permission or deletion eligibility."""
+    if isinstance(review, dict) and review.get("schema_version") == 2:
+        from artifact_inventory import validate_review
+        return validate_review(root, state, run_id, review)
     errors = []
     run = state.get("runs", {}).get(run_id)
     if not run or run.get("status") not in TERMINAL:
@@ -152,6 +155,24 @@ def render_artifact_reviews(state):
                 lines.append(f"| {cell(run_id)} | 待评估 | — | 0 | 尚未登记 |")
             continue
         review = record["review"]
+        if review.get('schema_version') == 2:
+            if review['inventory_reference'] != run['artifact_inventory']['reference']:
+                lines.append(f"| {cell(run_id)} | 待重新评估 | — | 0 | 扫描已更新，旧评估不覆盖新清单 |")
+                continue
+            inventory = run['artifact_inventory']['inventory']
+            identities = {x['path']: x for x in inventory['files']}
+            removed = state.get('artifact_removed', {})
+            candidates = [x for x in review['files'] if x['decision'] == 'delete_candidate' and x['path'] not in removed]
+            size = sum(identities[x['path']]['size_bytes'] for x in candidates)
+            decision = '文件级：' + ', '.join(f"{d}={sum(x['decision']==d for x in review['files'])}" for d in sorted(DECISIONS))
+            pending = [x for x in state.get('artifact_reassessments', {}).values() if x['target_run_id'] == run_id and not x.get('resolved_by')]
+            if pending: decision += '；待历史复评'
+            lines.append(f"| {cell(run_id)} | {cell(decision)} | {cell(review['review_after'])} | {size} | {cell(review['reason'])} |")
+            details.extend(['', f'## {cell(run_id)}', '', f"评估记录：`{cell(record['reference'])}`；扫描：`{cell(run['artifact_inventory']['reference'])}`", ''])
+            for item in review['files']:
+                status = 'deleted' if item['path'] in removed else item['decision']
+                details.append(f"- `{cell(item['path'])}` ({identities[item['path']]['size_bytes']} bytes): {status}; {cell(item['reason'])}")
+            continue
         size = sum(x["size_bytes"] for x in review.get("files", []))
         lines.append(f"| {cell(run_id)} | {cell(review['decision'])} | {cell(review['review_after'])} | {size} | {cell(review['reason'])} |")
         details.extend(["", f"## {cell(run_id)}", "", f"评估记录：`{cell(record['reference'])}`；保留：" + ", ".join(f"`{cell(p)}`" for p in review['preserve']), ""])

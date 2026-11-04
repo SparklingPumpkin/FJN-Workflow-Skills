@@ -600,6 +600,9 @@ def cmd_register_run(args: argparse.Namespace) -> None:
             "code_identity": args.code_identity.strip(),
             "data_identity": args.data_identity.strip(),
             "artifact_review_required": True,
+            "artifact_review_schema": 2,
+            "artifact_inputs": [],
+            "artifact_related_runs": list(args.related_run_id),
             "summary": "",
             "evidence": [],
             "created_at": now_iso(),
@@ -607,6 +610,20 @@ def cmd_register_run(args: argparse.Namespace) -> None:
         }
         if not all([run["config_identity"], run["code_identity"], run["data_identity"]]):
             raise WorkflowError("Every run must record config, code, and data identity")
+        from artifact_inventory import exact_path
+        for value in args.artifact_input:
+            try:
+                path = exact_path(root, value).resolve()
+                if not path.exists(): raise ValueError(f'input missing: {value}')
+            except ValueError as exc:
+                raise WorkflowError(str(exc)) from exc
+            run['artifact_inputs'].append(dict(path=str(path)))
+            for rid, old in state['runs'].items():
+                old_path = root/state['directories'][old['directory_id']]['path']
+                if path.is_relative_to(old_path.resolve()) and rid not in run['artifact_related_runs']:
+                    run['artifact_related_runs'].append(rid)
+        if any(rid not in state['runs'] for rid in run['artifact_related_runs']):
+            raise WorkflowError('related runs must already be registered; do not infer from version names')
         _, event = append_event_and_render(root, args.control_dir, "run_registered", {"run": run})
     print_json({"event_id": event["event_id"], "run": run})
 
@@ -701,12 +718,17 @@ def cmd_record_artifact_review(args: argparse.Namespace) -> None:
         except (ValueError, OSError) as exc:
             raise WorkflowError(f"Invalid artifact review file: {exc}") from exc
         errors = validate_artifact_review(root, state, args.run_id, review)
+        if state['runs'].get(args.run_id, {}).get('artifact_review_schema') == 2 and review.get('schema_version') != 2:
+            errors.append('new run requires file-level artifact review schema v2')
         if errors:
             raise WorkflowError("; ".join(errors))
         payload = {"run_id": args.run_id, "artifact_review": {
             "reference": args.review_file, "sha256": sha256_file(path),
             "review": review, "recorded_at": now_iso(),
         }}
+        if review.get('schema_version') == 2:
+            from artifact_inventory import material_snapshots
+            payload['artifact_review']['material_snapshots'] = material_snapshots(root, review)
         _, event = append_event_and_render(root, args.control_dir, "artifact_review_recorded", payload)
     print_json({"event_id": event["event_id"], **payload, "deletion_executed": False})
 
@@ -764,6 +786,9 @@ def cmd_conclude_candidate(args: argparse.Namespace) -> None:
         }
         if args.status == "passed":
             payload["acceptance_report"] = verified_acceptance(root, candidate, args.acceptance_report, state)
+        from artifact_inventory import closeout_errors
+        errors = closeout_errors(root, state, candidate['run_ids'])
+        if errors: raise WorkflowError('; '.join(errors))
         _, event = append_event_and_render(root, args.control_dir, "candidate_concluded", payload)
     print_json({"event_id": event["event_id"], **payload})
 
@@ -807,6 +832,9 @@ def cmd_promote(args: argparse.Namespace) -> None:
             raise WorkflowError(f"Unknown candidate: {args.candidate_id}")
         if candidate["status"] != "passed":
             raise WorkflowError("Only a passed candidate can replace current")
+        from artifact_inventory import closeout_errors
+        errors = closeout_errors(root, state, candidate['run_ids'])
+        if errors: raise WorkflowError('; '.join(errors))
         scope = state["scopes"][candidate["scope_id"]]
         if candidate["base_version_id"] != scope["current_version_id"]:
             raise WorkflowError("Candidate base is no longer current; rebase into a new candidate instead of silently promoting stale work")
@@ -989,6 +1017,8 @@ def build_parser() -> argparse.ArgumentParser:
     run.add_argument("--config-identity", required=True)
     run.add_argument("--code-identity", required=True)
     run.add_argument("--data-identity", required=True)
+    run.add_argument('--artifact-input', action='append', default=[], help='Exact actual input file/directory; repeat for scene-state dependencies')
+    run.add_argument('--related-run-id', action='append', default=[], help='Existing run replaced/compared by this experiment; triggers scoped reassessment')
     run.set_defaults(func=cmd_register_run)
 
     rename_run = sub.add_parser("rename-run", help="Append a corrective event that renames an active run and its directory")
@@ -1046,6 +1076,8 @@ def build_parser() -> argparse.ArgumentParser:
     rebuild.add_argument("--force", action="store_true", help="Allow recovery when state.json is stale; ledger integrity is still mandatory")
     rebuild.set_defaults(func=cmd_rebuild_state)
 
+    from artifact_commands import add_commands
+    add_commands(sub, add_common)
     return parser
 
 

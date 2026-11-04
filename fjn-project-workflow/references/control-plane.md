@@ -27,6 +27,8 @@ docs/project-control/
 
 机器事实源是 `events.jsonl`；`state.json` 可重建；总览 Markdown 由脚本生成，不手改。产物评估通过 `artifact_review_recorded` 事件追加，旧评估不覆盖；旧账本缺此功能字段时仍可重放。
 
+文件级评估 v2 复用同一账本：`artifact_inventory_recorded` 保存工具清单，`artifact_policy_recorded` 保存扫描/保护策略，`artifact_reassessment_requested` 保存历史复评请求；run 终结与 v2 评估也按声明关系触发请求。`artifact_cleanup_planned` 和 `artifact_cleanup_recorded` 保存精确计划及外部执行回执，均不执行删除。回执只解释对应身份的已删除产物，不改原评估/计划。新 run 必须 v2，旧 run 保持 v1，主动重新扫描后升级 v2。详见[产物生命周期](artifact-lifecycle.md)。
+
 ## 会话开始恢复协议
 
 每次接管长期项目，先做：

@@ -196,28 +196,26 @@ class ProjectWorkflowIntegrationTest(unittest.TestCase):
             "validation.md::证明候选通过质量与安全门",
             "--acceptance-report",
             self.acceptance_report("validation.md::证明候选通过质量与安全门"),
+            expected=2,
         )
         review_index = self.project / "docs/project-control/ARTIFACT_REVIEW.md"
         self.assertIn("待评估", review_index.read_text())
-        assessed = datetime.now(timezone.utc)
-        review = {
-            "schema_version": 1, "run_id": run_id, "decision": "keep",
-            "reason": "通过验收的交付候选，保留全部产物",
-            "assessed_at": assessed.isoformat(),
-            "review_after": (assessed + timedelta(days=7)).isoformat(),
-            "checks": {key: {"value": "unknown", "evidence": ["validation.md::交付实验须保留"]}
-                       for key in ("failed", "no_future_use", "not_historical_mainline", "never_delivered",
-                                   "no_protected_dependents", "reproducible")},
-            "preserve": ["validation.md"], "files": [],
-        }
+        scanned = self.run_cli('scan-artifacts', '--run-id', run_id, '--output', 'inventory.json')
+        review = json.loads(scanned.stdout)['review_draft']
+        review.update(assessed_at=datetime.now(timezone.utc).isoformat(), reason='无大型产物；验证材料保留',
+            preserve={k:['validation.md'] for k in review['preserve']},
+            history=dict(related_run_ids=[], reason='首次实验，没有旧结果被替代', evidence=['validation.md::首次实验']))
         (self.project / "artifact-review.json").write_text(json.dumps(review), encoding="utf-8")
         marked = self.run_cli("record-artifact-review", "--run-id", run_id, "--review-file", "artifact-review.json")
         self.assertIs(json.loads(marked.stdout)["deletion_executed"], False)
-        self.assertIn("keep", review_index.read_text())
+        self.assertIn("文件级", review_index.read_text())
         self.assertNotIn("待评估", review_index.read_text())
         before = review_index.read_text()
         self.run_cli("rebuild-state", "--force")
         self.assertEqual(review_index.read_text(), before)
+        self.run_cli('conclude-candidate', '--candidate-id', candidate_id, '--status', 'passed',
+            '--summary', '候选通过质量与安全门。', '--evidence', 'validation.md::证明候选通过质量与安全门',
+            '--acceptance-report', self.acceptance_report('validation.md::证明候选通过质量与安全门'))
         promoted = self.run_cli(
             "promote",
             "--candidate-id",
@@ -290,6 +288,67 @@ class ProjectWorkflowIntegrationTest(unittest.TestCase):
         guard = subprocess.run([sys.executable, str(GUARD), "--project-root", str(self.project), "--json"],
                                text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=False)
         self.assertEqual(guard.returncode, 0, guard.stdout + guard.stderr)
+
+    def test_v2_history_and_plan_commands_are_scoped_and_append_only(self) -> None:
+        self.init_project()
+        _, work = self.plan_and_register('experiments', 'workstream', 'dir-0001', '实验线')
+        _, family = self.plan_and_register('experiments/checks', 'experiment_family', work, '评估实验')
+        _, cdir = self.plan_and_register('experiments/checks/P-v1-a', 'candidate', family, '对照候选')
+        self.run_cli('create-candidate', '--scope-id', 'project', '--slug', 'retention-check',
+            '--hypothesis', '验证新结果触发旧产物复评', '--change-type', 'parameter_only', '--directory-id', cdir)
+        (self.project/'notes.md').write_text('真实结果、调用入口、输入与代码身份、授权和核验记录')
+        run_ids = ['run-20261103T080000Z-baseline', 'run-20261103T080001Z-followup']
+        paths = []
+        for index, rid in enumerate(run_ids):
+            path=f'experiments/checks/P-v1-a/{rid}'
+            _, directory = self.plan_and_register(path, 'run', cdir, '隔离运行')
+            paths.append(path)
+            extra=[] if index==0 else ['--related-run-id',run_ids[0], '--artifact-input',paths[0]+'/final.pt']
+            self.run_cli('register-run','--candidate-id','P-v1-a','--run-id',rid,'--variant','baseline' if index==0 else 'followup',
+                '--directory-id',directory,'--config-identity','config','--code-identity','code','--data-identity','data', *extra)
+            if index==0:
+                (self.project/path/'final.pt').write_bytes(b'required upstream')
+                (self.project/path/'unused.mp4').write_bytes(b'rebuildable old render')
+            self.run_cli('set-run-status','--run-id',rid,'--status','completed','--summary','结果已检查',
+                         '--evidence','notes.md::运行结束与输入核对')
+        blocked=self.run_cli('check-artifact-closeout','--run-id',run_ids[1],expected=2)
+        self.assertIn('history reassessment pending',blocked.stderr)
+        # Repair paths remain available even while closeout is blocked.
+        for index in [1,0]:
+            rid=run_ids[index]
+            scan=self.run_cli('scan-artifacts','--run-id',rid,'--output',f'inventory-{index}.json')
+            review=json.loads(scan.stdout)['review_draft']
+            review.update(assessed_at=datetime.now(timezone.utc).isoformat(),reason='逐文件核对实际用途',
+                preserve={k:['notes.md'] for k in review['preserve']},
+                history=dict(related_run_ids=[] if index==0 else [run_ids[0]],
+                             reason='仅复评实际比较的旧结果',evidence=['notes.md::关联范围']))
+            for row in review['files']:
+                row.update(decision='keep',keep_kind='dependency',consumer_run_ids=[run_ids[1]],
+                           reason='当前运行实际输入',evidence=['notes.md::加载记录'])
+                if row['path'].endswith('unused.mp4'):
+                    row.update(decision='delete_candidate',reason='旧视频用途结束',rebuild='按notes中的命令重建',
+                        checks={k:dict(value=True,evidence=['notes.md::后续用途与复现核对'])
+                                for k in ['no_future_use','no_protected_dependents','reproducible']})
+            (self.project/f'review-{index}.json').write_text(json.dumps(review))
+            self.run_cli('record-artifact-review','--run-id',rid,'--review-file',f'review-{index}.json')
+        self.run_cli('check-artifact-closeout','--run-id',run_ids[1])
+        receipt_plan=json.loads(self.run_cli('plan-artifact-cleanup','--run-id',run_ids[0],
+                                           '--output','plan.json').stdout)
+        self.assertEqual(receipt_plan['file_count'],0)  # Recent runs are protected, even if candidate marked.
+        self.assertEqual(len(receipt_plan['skipped']),1)
+        (self.project/'receipt.json').write_text(json.dumps(dict(plan_id=receipt_plan['plan_id'],
+            completed_at=datetime.now(timezone.utc).isoformat(),authorization_evidence=['notes.md::用户授权来源'],
+            verification_evidence=['notes.md::保留材料与进程核对'],files=[])))
+        self.run_cli('record-artifact-cleanup','--result-file','receipt.json')
+        self.run_cli('artifact-review-due')
+        state=json.loads((self.project/'docs/project-control/state.json').read_text())
+        self.assertTrue(state['artifact_reassessments'][run_ids[1]+'::'+run_ids[0]]['resolved_by'])
+        before=json.loads((self.project/'docs/project-control/state.json').read_text())
+        self.run_cli('rebuild-state','--force')
+        self.assertEqual(before,json.loads((self.project/'docs/project-control/state.json').read_text()))
+        self.run_cli('conclude-candidate','--candidate-id','P-v1-a','--status','failed',
+                     '--summary','假设未达标，文件价值独立判断','--evidence','notes.md::实验结论')
+        self.assertTrue((self.project/paths[0]/'unused.mp4').exists())
 
     def test_parameter_only_candidate_cannot_promote(self) -> None:
         self.init_project()

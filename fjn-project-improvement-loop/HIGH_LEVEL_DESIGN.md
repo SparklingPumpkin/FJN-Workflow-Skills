@@ -54,7 +54,7 @@ Critic 保留完整布尔 checks 映射，以迫使逐项审查。拒绝时 fals
 
 ### 2.6 `review_artifacts`
 
-实验完成并检查结果后，对绑定 candidate 的所有终态 run（含失败重试）显式登记保留价值：`keep`、`delete_candidate`、`needs_review`。详细评估由项目工作流追加到总账，并生成 `ARTIFACT_REVIEW.md`；本轮 `artifact_review.json` 只保存已评估 run 的引用。
+实验完成并检查结果后，对绑定 candidate 的所有终态 run（含失败重试）扫描并逐文件登记保留价值：`keep`、`delete_candidate`、`needs_review`，同时完成明确关联的历史复评。详细评估由项目工作流追加到总账，并生成 `ARTIFACT_REVIEW.md`；本轮 `artifact_review.json` 只保存已评估 run 的引用。覆盖、身份、保留材料或历史任务未通过时阻断收尾；清理计划不执行删除。
 
 这是必经阶段，不增加科学实验或 Critic 门。仅标记、至少七天后复核，不执行删除；保护主线、交付及其传递依赖，永久保留结论、关键证据和最小复现包。
 

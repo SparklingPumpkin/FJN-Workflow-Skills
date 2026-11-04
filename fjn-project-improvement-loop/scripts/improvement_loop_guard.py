@@ -256,6 +256,7 @@ def validate_artifact_marks(project_root: Path, number: int) -> list[str]:
         return [str(exc)]
     sys.path.insert(0, str(PROJECT_WORKFLOW_GUARD.parent))
     from artifact_review import validate_artifact_review, TERMINAL
+    from artifact_inventory import closeout_errors
     errors = []
     expected = set()
     for binding in execution.get("bindings", []):
@@ -288,6 +289,7 @@ def validate_artifact_marks(project_root: Path, number: int) -> list[str]:
                 errors.append(f"{run_id}: registered review file changed")
         except (ValidationError, KeyError) as exc:
             errors.append(str(exc))
+    errors.extend(closeout_errors(workflow_root, workflow, expected))
     return errors
 
 

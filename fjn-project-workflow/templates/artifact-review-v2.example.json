@@ -1,0 +1,42 @@
+{
+  "schema_version": 2,
+  "run_id": "run-20261103T080000Z-probe",
+  "inventory_reference": "docs/project-control/inventory-probe-01.json",
+  "assessed_at": "2026-11-03T09:05:00+00:00",
+  "review_after": "2026-11-10T09:00:00+00:00",
+  "reason": "最终结果保留，中间状态可由同一入口重建；依据实际加载路径复核",
+  "preserve": {
+    "conclusion": ["experiments/probe/report.md"],
+    "metrics_timing": ["experiments/probe/metrics.json", "experiments/probe/timing.json"],
+    "reproduction": ["experiments/probe/reproduce.sh", "experiments/probe/config.json"],
+    "code_identity": ["experiments/probe/source_identity.md"],
+    "inputs": ["experiments/probe/inputs.json"]
+  },
+  "history": {
+    "related_run_ids": [],
+    "reason": "该独立探针没有替代旧 run，输入为通用预训练权重",
+    "evidence": ["experiments/probe/inputs.json::输入与关联范围已核对"]
+  },
+  "files": [
+    {
+      "path": "experiments/probe/final.pt",
+      "decision": "keep",
+      "keep_kind": "reusable",
+      "reason": "保留给下一个几何对照实验作初始化",
+      "review_condition": "几何对照结束后，根据是否仍加载此文件复评",
+      "evidence": ["experiments/probe/report.md::下一步对照计划"]
+    },
+    {
+      "path": "experiments/probe/middle.pt",
+      "decision": "delete_candidate",
+      "reason": "中间检查点不被最终导出和后续实验读取",
+      "evidence": ["experiments/probe/report.md::中间检查点用途已结束"],
+      "rebuild": "按 reproduce.sh 与 config.json 重跑到中间检查点；材料已核对，未复跑",
+      "checks": {
+        "no_future_use": {"value": true, "evidence": ["experiments/probe/report.md::后续计划不再使用中间检查点"]},
+        "no_protected_dependents": {"value": true, "evidence": ["experiments/probe/inputs.json::实际加载路径与已知消费者已核对"]},
+        "reproducible": {"value": true, "evidence": ["experiments/probe/reproduce.sh::重建入口与参数已核对，未复跑"]}
+      }
+    }
+  ]
+}

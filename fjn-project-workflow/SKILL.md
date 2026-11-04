@@ -139,7 +139,7 @@ python3 ./scripts/project_workflow.py conclude-candidate \
   --acceptance-report <verified-checks.json>
 ```
 
-失败和放弃候选的结论与证据也永久保留。清理实验大文件时，必须先完整读取 [产物生命周期](./references/artifact-lifecycle.md)：只有确认未达标、非近期活动、非历史主线、从未固化交付，且不属于上述三类受保护实验的直接或传递依赖的实验，才可列为无用实验。先保存每个实验的结论和最小复现包，再提出精确到文件的清理计划；本控制器不自动删除实验资产，执行清理须在用户已授权的范围内。
+失败和放弃候选的结论与证据也永久保留。run 终结先写入，再完成第 7 节评估，最后 conclude candidate；缺评估阻断候选收尾，不能省略失败与重试。实验成败与文件价值分开：成功实验的冗余输出可评估，实际交付、证据、项目指定保护路径及依赖保留。具体规则见 [产物生命周期](./references/artifact-lifecycle.md)。控制器不执行资产删除。
 
 ### 6. 只有晋级才创建新主版本
 
@@ -166,19 +166,30 @@ python3 ./scripts/project_workflow.py promote \
 
 控制器原子追加事件、切换 current、更新总览并创建不可变版本快照。不得直接编辑这些生成文件。
 
-### 7. 必做：实验产物保留价值评估（仅标记）
+### 7. 必做：文件级价值评估与关联历史复评（不删除）
 
-每个 run 结束、结论入账且亲自检查结果后，交付前必须显式评估产物，失败、取消和重试也不例外。完整读取 [产物生命周期](./references/artifact-lifecycle.md)，使用 [评估模板](./templates/artifact-review.example.json) 保存项目内的独立 JSON，再登记：
+每个 run 终结、结论入账且亲自检查结果后，交付前完整读取 [产物生命周期](./references/artifact-lifecycle.md)。新 run 必须先工具扫描、再按返回的 v2 草稿逐文件评估，不能一句“全部 keep”跳过大文件。旧 v1 评估继续兼容，不要求全项目补录。
 
 ```bash
+python3 ./scripts/project_workflow.py scan-artifacts \
+  --project-root <project> --run-id <run-id> \
+  --output docs/project-control/inventory-<run-id>-01.json
+
 python3 ./scripts/project_workflow.py record-artifact-review \
   --project-root <project> --run-id <run-id> \
   --review-file <project-relative-review.json>
+
+python3 ./scripts/project_workflow.py check-artifact-closeout \
+  --project-root <project> --run-id <run-id>
 ```
 
-标记为 `keep`（保留）、`delete_candidate`（一周后复核的删除候选）或 `needs_review`（依据不足）。没有可删项也必须登记理由。候选需列精确文件、大小、mtime、删除理由与重建方式，并保留结论、关键证据及最小复现包。不能仅因失败、未晋级或体积大就标记可删。
+每文件为 `keep / delete_candidate / needs_review`；临时保留写具体用途与复评条件。保留结论、指标计时、配置脚本、代码身份、输入清单及代表图；依赖未明不声称可删。[v2 示例](./templates/artifact-review-v2.example.json) 给出字段，精确路径/身份来自工具，不用目录或 glob。
 
-`assessed_at` 不早于 run 终结，`review_after` 至少晚七天。该标记不授权删除、不会自动执行清理；到期须重新核对近期活动、主线/交付保护、传递依赖和文件身份。评估文件不可覆盖，后续改判使用新文件和新登记事件。统一清单由控制器生成在 `docs/project-control/ARTIFACT_REVIEW.md`，禁止手改；不要求批量回填全部旧 run。配合 improvement-loop 时由 `review_artifacts` 阶段核对覆盖。
+登记 run 用 `--artifact-input <exact-path>` 声明实际加载的场景资产，`--related-run-id <old-run>` 声明替代/对照关系。本轮结束触发关联终态旧 run 的重新扫描和追加评估；无关联也在评估 `history` 中明确说明。只复评有关旧结果，不全项目扫描，不把全部祖先当作已替代。
+
+保护期默认最近实际活动七天，补评估不重置。项目指定保护路径用 `set-artifact-policy` 登记。`artifact-review-due` 查询到期项，`plan-artifact-cleanup` 导出精确计划，`record-artifact-cleanup` 记录外部清理回执；均不删除。真实清理按用户已有授权，重新核对当前活动与实际/传递依赖。统一视图 `ARTIFACT_REVIEW.md` 不手改。
+
+conclude/promote 和 improvement-loop 推进硬检查漏项、文件/材料变化和历史复评任务；通用 guard 保持待评估警告，使终结和补评估可写，避免死锁。校验器核对覆盖和已知依赖，不能证明科学判断正确或不存在未知消费者。
 
 ### 8. 收尾验证
 

@@ -362,8 +362,35 @@ def apply_event(state: dict[str, Any] | None, event: dict[str, Any]) -> dict[str
         run["summary"] = payload["summary"]
         run["evidence"].extend(deepcopy(payload["evidence"]))
         run["updated_at"] = event["recorded_at"]
+        if payload['status'] in {'completed', 'failed', 'cancelled'} and run.get('artifact_review_schema') == 2:
+            run.setdefault('ended_at', event['recorded_at'])
+            from artifact_inventory import request_reassessments
+            request_reassessments(state, payload['run_id'], run.get('artifact_related_runs', []), event)
+    elif event_type == 'artifact_policy_recorded':
+        state['config']['artifact_policy'] = deepcopy(payload['policy'])
+    elif event_type == 'artifact_inventory_recorded':
+        state['runs'][payload['run_id']]['artifact_inventory'] = deepcopy(payload['record'])
+        state['runs'][payload['run_id']]['artifact_review_schema'] = 2
+    elif event_type == 'artifact_reassessment_requested':
+        from artifact_inventory import request_reassessments
+        request_reassessments(state, payload['source_run_id'], payload['target_run_ids'], event)
+    elif event_type == 'artifact_cleanup_planned':
+        state.setdefault('artifact_cleanup_plans', {})[event['event_id']] = deepcopy(payload['record'])
+    elif event_type == 'artifact_cleanup_recorded':
+        state.setdefault('artifact_cleanup_results', {})[event['event_id']] = deepcopy(payload)
+        for row in payload['result']['files']:
+            if row['outcome'] == 'deleted':
+                state.setdefault('artifact_removed', {})[row['path']] = dict(
+                    identity=row['identity'], plan_id=payload['result']['plan_id'], receipt_event=event['event_id'])
     elif event_type == "artifact_review_recorded":
         state["runs"][payload["run_id"]]["artifact_review"] = deepcopy(payload["artifact_review"])
+        if payload['artifact_review']['review'].get('schema_version') == 2:
+            from artifact_inventory import request_reassessments
+            review = payload['artifact_review']['review']
+            for task in state.get('artifact_reassessments', {}).values():
+                if task['target_run_id'] == payload['run_id'] and not task.get('resolved_by'):
+                    task['resolved_by'] = event['event_id']
+            request_reassessments(state, payload['run_id'], review['history']['related_run_ids'], event, only_new=True)
     elif event_type == "candidate_concluded":
         candidate = state["candidates"][payload["candidate_id"]]
         candidate["status"] = payload["status"]
@@ -826,6 +853,18 @@ def audit_state(project_root: Path, control_dir: str = DEFAULT_CONTROL_DIR, chec
             source = project_root / record["reference"]
             if not source.is_file() or sha256_file(source) != record["sha256"]:
                 report.error(f"Artifact review missing/changed for {run_id}; append a new review instead")
+        inventory = run.get('artifact_inventory')
+        if inventory and check_filesystem:
+            source = project_root / inventory['reference']
+            if not source.is_file() or sha256_file(source) != inventory['sha256']:
+                report.error(f'Artifact inventory missing/changed for {run_id}; rescan instead')
+    if check_filesystem:
+        for collection in ('artifact_cleanup_plans', 'artifact_cleanup_results'):
+            for record in state.get(collection, {}).values():
+                if collection == 'artifact_cleanup_results': record = record['record']
+                source = project_root / record['reference']
+                if not source.is_file() or sha256_file(source) != record['sha256']:
+                    report.error(f'Artifact cleanup record missing/changed: {record["reference"]}')
     for path, expected in expected_views.items():
         if not path.exists():
             report.error(f"Missing generated control view: {path}")

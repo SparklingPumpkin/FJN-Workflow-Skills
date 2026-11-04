@@ -198,13 +198,13 @@ python ./scripts/improvement_loop_tree.py apply --project-root <project>
 
 ## 阶段 6：实验产物保留价值评估（仅标记）
 
-每轮实验结束、亲自检查结果并完成树演化后，必须显式判断哪些实验产物已经没有保留价值。覆盖本轮绑定 candidate 的全部终态 run，包括失败、取消和重试；实验失败不等于产物无价值，反例、未解决故障复现和后续输入仍应保留。
+每个 run 终结、亲自检查结果后，先通过 workflow 完成文件级评估和本轮触发的关联历史复评，再正式 conclude candidate。树演化后本阶段汇总核对覆盖，包括失败、取消和重试；失败不等于无价值，成功也不代表冗余文件永久保留。
 
-通过 [项目工作流的产物评估](../fjn-project-workflow/references/artifact-lifecycle.md) 为每个 run 追加 `keep`、`delete_candidate` 或 `needs_review` 标记，不能只在聊天里说“可以删除”。没有可删项也要登记判断和理由。详细文件清单只存项目工作流，不另建第二套资产账本。
+完整读取 [项目工作流的产物评估](../fjn-project-workflow/references/artifact-lifecycle.md)。新 run 用 `scan-artifacts` 清单和 schema v2 逐文件追加 `keep / delete_candidate / needs_review`。声明实际 `--artifact-input` 和 `--related-run-id`，关联终态旧 run 重新扫描和评估，不用旧 keep 消除任务。临时保留写用途与复评条件，无关联也说明依据。详细清单只存 workflow，不另建账本。
 
 本轮 `artifact_review.json` 只保存 `schema_version: 1`、当前 `round_id` 和已评估的 `run_ids`。guard 核对精确覆盖、真实登记及其文件；缺标记不能进入下一轮或完成。已有活动轮次缺此模板时补建当前轮文件，不改旧轮历史。
 
-`delete_candidate` 只是供一周后集中复核的候选标记，至少七天后才复核，不授权删除，也不启动自动清理。当前/历史主线、固化交付及其传递依赖继续受保护；结论、关键证据和最小复现包永久保留。评估只核对已有材料，不为此新开科学实验或 Critic 审议。
+guard 调用 workflow scoped closeout，除覆盖还检查文件身份与历史任务；缺评估或新产物未分类不能进入下一轮/完成。`delete_candidate` 不授权删除；最近实际实验活动至少保护七天，补评估不重置。项目保护范围、实际交付、证据和依赖保留，历史目录冗余输出可单独评估。只核对已有材料，不为此新开科学实验或 Critic 审议。真实清理另按已有授权与精确计划执行。
 
 ## Guard 与推进
 
