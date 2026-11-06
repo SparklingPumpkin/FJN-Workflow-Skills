@@ -11,10 +11,10 @@ from pathlib import Path
 
 from improvement_loop_guard import validate_tree, validate_workflow_bindings
 from improvement_loop_policy import (
-    DESIGN_REVIEW_CHECKS,
     EVOLUTION_REVIEW_CHECKS,
     ValidationError,
     artifact_digest,
+    design_review_checks,
     load_json,
     validate_design,
     validate_evaluation,
@@ -24,6 +24,7 @@ from improvement_loop_policy import (
     validate_review,
     write_json,
 )
+from decision_quality import validate_stagnation
 
 CONTROL_RELATIVE = Path("docs/improvement-loop")
 
@@ -170,6 +171,9 @@ def validate_tree_inputs(
     expected_round_id: str,
 ) -> list[str]:
     errors = validate_goal(goal)
+    state = load_json(project_root.resolve() / CONTROL_RELATIVE / "loop_state.json")
+    if state.get("decision_policy_version") == 1 and "decision_contract" not in design:
+        errors.append("new loops require decision_contract; do not disable decision checks")
     errors.extend(validate_tree(tree, project_root))
     if design.get("base_tree_digest") != artifact_digest(tree):
         errors.append("design.base_tree_digest does not match the current formal tree")
@@ -185,6 +189,11 @@ def validate_tree_inputs(
     errors.extend(validate_execution(execution, design))
     errors.extend(validate_evaluation(evaluation, design, goal))
     errors.extend(validate_evolution(evolution, design, evaluation))
+    number = int(expected_round_id.removeprefix("round-"))
+    errors.extend(validate_stagnation(
+        project_root.resolve() / CONTROL_RELATIVE, number, design, evaluation, evolution,
+        search_start_round=state.get("search_start_round", 1),
+    ))
     return errors
 
 
@@ -209,7 +218,7 @@ def prepare_tree(project_root: Path) -> dict[str, str | int | bool]:
             load_json(current / "design_review.json"),
             target_kind="design",
             expected_digest=artifact_digest(goal, design),
-            required_checks=DESIGN_REVIEW_CHECKS,
+            required_checks=design_review_checks(design),
             expected_round_id=expected_round_id,
         )
     )
@@ -260,7 +269,7 @@ def apply_tree(project_root: Path) -> dict[str, str | bool]:
             load_json(current / "design_review.json"),
             target_kind="design",
             expected_digest=artifact_digest(goal, design),
-            required_checks=DESIGN_REVIEW_CHECKS,
+            required_checks=design_review_checks(design),
             expected_round_id=expected_round_id,
         )
     )

@@ -28,6 +28,15 @@ def policy(state):
     return dict(DEFAULT_POLICY, **state.get('config', {}).get('artifact_policy', {}))
 
 
+def policy_compatible(old, current):
+    # Additive protection cannot permit any new deletion. Current exact-path
+    # protection is still checked by review/plan/receipt; selection and recency
+    # changes or protection removal require a fresh inventory/plan.
+    return (old.get('min_size_bytes') == current.get('min_size_bytes')
+            and old.get('recent_days') == current.get('recent_days')
+            and set(old.get('protected_paths', [])) <= set(current.get('protected_paths', [])))
+
+
 def validate_policy(value):
     if not isinstance(value, dict) or set(value) != set(DEFAULT_POLICY):
         raise ValueError('policy must contain min_size_bytes, recent_days, protected_paths')
@@ -79,14 +88,25 @@ def evidence(root, entries):
         local_file(root, ref)
 
 
+class ProtectedPaths(set):
+    pass
+
+
 def protected_paths(root, state):
     """Conservative known references. Does not claim to discover all loads."""
-    paths = {exact_path(root, x).resolve() for x in policy(state)['protected_paths']}
+    from functools import lru_cache
+    @lru_cache(maxsize=None)
+    def resolved(value):
+        return exact_path(root, value).resolve()
+    paths = ProtectedPaths(resolved(x) for x in policy(state)['protected_paths'])
+    paths.hard = set(paths)
+    from artifact_retirement import allowed_paths
+    paths.retired = allowed_paths(root, state)
     def visit(value):
         if isinstance(value, dict):
             ref = value.get('reference')
             if isinstance(ref, str) and '://' not in ref and not ref.startswith(('user:', 'external:')):
-                paths.add(exact_path(root, ref).resolve())
+                paths.add(resolved(ref))
             for child in value.values(): visit(child)
         elif isinstance(value, list):
             for child in value: visit(child)
@@ -95,19 +115,22 @@ def protected_paths(root, state):
             visit(item.get('evidence', []))
             visit(item.get('acceptance_contract', {}))
             visit(item.get('acceptance_report', {}))
+    paths.hard.update(paths)
     for run in state.get('runs', {}).values():
         for item in run.get('artifact_inputs', []):
-            paths.add(exact_path(root, item['path']).resolve())
+            paths.add(resolved(item['path']))
         review = run.get('artifact_review', {}).get('review', {})
         if review.get('schema_version') == 2:
-            paths.update((root / p).resolve() for p in review_evidence_files(review))
+            material = {resolved(p) for p in review_evidence_files(review)}
+            paths.update(material); paths.hard.update(material)
             for group in review.get('preserve', {}).values():
-                paths.update((root / p).resolve() for p in group)
+                material = {resolved(p) for p in group}
+                paths.update(material); paths.hard.update(material)
             for row in review.get('files', []):
                 if row['decision'] == 'keep' and row.get('keep_kind') in {'evidence', 'dependency', 'protected'}:
-                    paths.add((root / row['path']).resolve())
+                    paths.add(resolved(row['path']))
         for key in ('artifact_inventory', 'artifact_review'):
-            if run.get(key): paths.add((root / run[key]['reference']).resolve())
+            if run.get(key): paths.add(resolved(run[key]['reference']))
     return paths
 
 
@@ -139,7 +162,12 @@ def material_snapshots(root, review):
 
 def protected(path, paths):
     resolved = path.resolve()
-    return any(resolved == p or resolved.is_relative_to(p) for p in paths)
+    ancestors = (resolved, *resolved.parents)
+    if any(p in getattr(paths, 'hard', set()) for p in ancestors):
+        return True
+    if resolved in getattr(paths, 'retired', set()):
+        return False
+    return any(p in paths for p in ancestors)
 
 
 def scan(root, state, run_id):
@@ -175,7 +203,7 @@ def scan_errors(root, state, run_id, inventory):
     """Rescan closeout scope; receipts account only for exact recorded removals."""
     current = scan(root, state, run_id)
     errors = []
-    if inventory['policy'] != current['policy']:
+    if not policy_compatible(inventory['policy'], current['policy']):
         errors.append('artifact policy changed; rescan and reassess')
     actual = {x['path']: x for x in current['files']}
     expected = {x['path']: x for x in inventory['files']}
@@ -265,8 +293,10 @@ def _validate_review(root, state, run_id, review):
     view = deepcopy(state)
     view['runs'][run_id].pop('artifact_review', None)
     protected_set = protected_paths(root, view)
-    protected_set.update((root/p).resolve() for group in preserve.values() for p in group)
-    protected_set.update((root/p).resolve() for p in review_evidence_files(review))
+    retained = {(root/p).resolve() for group in preserve.values() for p in group}
+    retained.update((root/p).resolve() for p in review_evidence_files(review))
+    protected_set.update(retained)
+    protected_set.hard.update(retained)
     for row in rows:
         path = row['path']; p = root/path; info = invrows[path]
         if row.get('decision') not in DECISIONS or not nonempty(row.get('reason')):
@@ -369,7 +399,7 @@ def make_cleanup_plan(root, state, run_ids, now=None):
             if row['decision'] != 'delete_candidate' or row['path'] in state.get('artifact_removed', {}): continue
             path = root/row['path']
             why = None
-            if now < utc(review['review_after']): why = 'recent protection/review date not reached'
+            if now < utc(review['review_after']) and path.resolve() not in getattr(guards, 'retired', set()): why = 'recent protection/review date not reached'
             elif protected(path, guards): why = 'new protection or declared consumer'
             if why:
                 plan['skipped'].append(dict(path=row['path'], reason=why)); continue

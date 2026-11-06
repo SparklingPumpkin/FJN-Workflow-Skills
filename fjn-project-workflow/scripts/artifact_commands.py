@@ -36,7 +36,14 @@ def command(args):
         with w.exclusive_lock(root, args.control_dir):
             state, _ = w.load_and_verify(root, args.control_dir)
             action = args.command
-            if action == 'set-artifact-policy':
+            if action == 'authorize-artifact-retirement':
+                from artifact_retirement import validate
+                value = read(root, args.authorization_file)
+                validate(root, state, value)
+                record = dict(reference=args.authorization_file, sha256=w.sha256_file(root/args.authorization_file), authorization=value)
+                _, event = w.append_event_and_render(root, args.control_dir, 'artifact_retirement_authorized', dict(record=record))
+                output(dict(event_id=event['event_id'], files=len(value['files']), deletion_executed=False))
+            elif action == 'set-artifact-policy':
                 value = read(root, args.policy_file)
                 a.validate_policy(value)
                 evidence = w.parse_evidence(root, args.evidence)
@@ -131,8 +138,13 @@ def validate_cleanup_result(root, state, result):
     # only these exact missing paths. Existing new dependencies still block.
     from copy import deepcopy
     after = deepcopy(state)
-    guards = a.protected_paths(root, state)
-    if plan['policy'] != a.policy(state): raise ValueError('policy changed since cleanup plan')
+    # Exact planned deletions establish the projected identity for scoped retirement
+    # while existence, consumer and receipt checks below still apply.
+    for row in rows:
+        if row.get('outcome') == 'deleted' and row.get('identity') == expected[row['path']]['identity']:
+            after.setdefault('artifact_removed', {})[row['path']] = dict(identity=row['identity'])
+    guards = a.protected_paths(root, after)
+    if not a.policy_compatible(plan['policy'], a.policy(state)): raise ValueError('policy changed since cleanup plan')
     for rid, sha in plan['review_references'].items():
         if state['runs'][rid]['artifact_review']['sha256'] != sha:
             raise ValueError('review changed since plan; replan')
@@ -145,13 +157,15 @@ def validate_cleanup_result(root, state, result):
             if a.protected(path, guards): raise ValueError('new protected dependency was deleted; restore before recording')
             after.setdefault('artifact_removed', {})[row['path']] = dict(identity=prior)
         elif row['outcome'] == 'skipped':
-            if a.identity(path) != prior: raise ValueError('skipped file changed')
+            if a.identity(path) != {k:v for k,v in prior.items() if k != 'path'}: raise ValueError('skipped file changed')
         else: raise ValueError('outcome must be deleted or skipped')
     errors = a.closeout_errors(root, after, list(plan['review_references']))
     if errors: raise ValueError('; '.join(errors))
 
 
 def add_commands(sub, add_common):
+    p = sub.add_parser('authorize-artifact-retirement', help='Record explicit user scoped exact-file retirement; preserves hard/external protections')
+    add_common(p); p.add_argument('--authorization-file', required=True); p.set_defaults(func=command)
     p = sub.add_parser('set-artifact-policy', help='Record thresholds/recent protection/exact protected paths; never delete')
     add_common(p); p.add_argument('--policy-file', required=True); p.add_argument('--reason', required=True)
     p.add_argument('--evidence', action='append', required=True); p.set_defaults(func=command)

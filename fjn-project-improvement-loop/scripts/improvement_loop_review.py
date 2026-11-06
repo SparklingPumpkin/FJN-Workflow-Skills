@@ -7,12 +7,14 @@ import argparse
 import json
 from pathlib import Path
 
-from improvement_loop_policy import ValidationError, artifact_digest, load_json
+from improvement_loop_policy import (
+    EVOLUTION_REVIEW_CHECKS, ValidationError, artifact_digest, design_review_checks, load_json,
+)
 
 CONTROL_RELATIVE = Path("docs/improvement-loop")
 
 
-def review_target(project_root: Path, target: str) -> dict[str, str]:
+def review_target(project_root: Path, target: str) -> dict:
     control = project_root.resolve() / CONTROL_RELATIVE
     state = load_json(control / "loop_state.json")
     number = state.get("round")
@@ -33,7 +35,10 @@ def review_target(project_root: Path, target: str) -> dict[str, str]:
             load_json(current / "evolution.json"),
             load_json(current / "proposed_tree.json"),
         )
-    return {"round_id": f"round-{number:03d}", "target_kind": target, "target_digest": digest}
+    checks = (design_review_checks(load_json(current / "design.json"))
+              if target == "design" else EVOLUTION_REVIEW_CHECKS)
+    return {"round_id": f"round-{number:03d}", "target_kind": target,
+            "target_digest": digest, "required_checks": sorted(checks)}
 
 
 def main() -> int:

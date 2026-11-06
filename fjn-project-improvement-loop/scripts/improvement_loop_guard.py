@@ -12,11 +12,11 @@ from pathlib import Path
 from typing import Any
 
 from improvement_loop_policy import (
-    DESIGN_REVIEW_CHECKS,
     EVOLUTION_REVIEW_CHECKS,
     STAGES,
     ValidationError,
     artifact_digest,
+    design_review_checks,
     load_json,
     validate_design,
     validate_evaluation,
@@ -27,6 +27,7 @@ from improvement_loop_policy import (
     validate_review,
     write_json,
 )
+from decision_quality import validate_stagnation
 
 CONTROL_RELATIVE = Path("docs/improvement-loop")
 PROJECT_WORKFLOW_GUARD = (
@@ -308,6 +309,8 @@ def validate_stage(project_root: Path, stage: str) -> tuple[list[str], dict[str,
     goal = load_json(target / "goal.json")
     expected_round_id = f"round-{number:03d}"
     errors: list[str] = []
+    if state.get("decision_policy_version") == 1 and "decision_contract" not in design:
+        errors.append("new loops require decision_contract; do not disable decision checks")
     if design.get("round_id") != expected_round_id:
         errors.append(f"design.round_id must be {expected_round_id}")
     if stage == "assess_target":
@@ -325,7 +328,7 @@ def validate_stage(project_root: Path, stage: str) -> tuple[list[str], dict[str,
                 load_json(current_round / "design_review.json"),
                 target_kind="design",
                 expected_digest=artifact_digest(goal, design),
-                required_checks=DESIGN_REVIEW_CHECKS,
+                required_checks=design_review_checks(design),
                 expected_round_id=expected_round_id,
             )
         )
@@ -339,7 +342,7 @@ def validate_stage(project_root: Path, stage: str) -> tuple[list[str], dict[str,
                 load_json(current_round / "design_review.json"),
                 target_kind="design",
                 expected_digest=artifact_digest(goal, design),
-                required_checks=DESIGN_REVIEW_CHECKS,
+                required_checks=design_review_checks(design),
                 expected_round_id=expected_round_id,
             )
         )
@@ -358,7 +361,7 @@ def validate_stage(project_root: Path, stage: str) -> tuple[list[str], dict[str,
                 load_json(current_round / "design_review.json"),
                 target_kind="design",
                 expected_digest=artifact_digest(goal, design),
-                required_checks=DESIGN_REVIEW_CHECKS,
+                required_checks=design_review_checks(design),
                 expected_round_id=expected_round_id,
             )
         )
@@ -391,7 +394,7 @@ def validate_stage(project_root: Path, stage: str) -> tuple[list[str], dict[str,
                 load_json(current_round / "design_review.json"),
                 target_kind="design",
                 expected_digest=artifact_digest(goal, design),
-                required_checks=DESIGN_REVIEW_CHECKS,
+                required_checks=design_review_checks(design),
                 expected_round_id=expected_round_id,
             )
         )
@@ -399,6 +402,10 @@ def validate_stage(project_root: Path, stage: str) -> tuple[list[str], dict[str,
         errors.extend(validate_workflow_bindings(execution))
         errors.extend(validate_evaluation(evaluation, design, goal))
         errors.extend(validate_evolution(evolution, design, evaluation))
+        errors.extend(validate_stagnation(
+            target, number, design, evaluation, evolution,
+            search_start_round=state.get("search_start_round", 1),
+        ))
         errors.extend(validate_tree_evolution(proposed_tree, design, evolution))
         errors.extend(
             validate_review(

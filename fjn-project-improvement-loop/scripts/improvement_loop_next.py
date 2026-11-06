@@ -86,6 +86,8 @@ def init_project(project_root: Path, dry_run: bool) -> dict[str, Any]:
     write_json(target / "solution_tree.json", tree)
     state = {
         "schema_version": 2,
+        "decision_policy_version": 1,
+        "search_start_round": 1,
         "skill": "fjn-project-improvement-loop",
         "project_root": str(project_root),
         "stage": STAGES[0],
@@ -231,6 +233,7 @@ def stop(project_root: Path, status: str, reason: str) -> dict[str, Any]:
 
 
 def revise(project_root: Path) -> dict[str, Any]:
+    project_root = project_root.resolve()
     state = load_json(state_path(project_root))
     if state.get("status") not in {"completed", "stopped"}:
         raise ValidationError("only a terminal loop can be revised")
@@ -247,6 +250,8 @@ def revise(project_root: Path) -> dict[str, Any]:
     state.update(
         {
             "stage": STAGES[0],
+            "decision_policy_version": 1,
+            "search_start_round": state["round"] + 1,
             "round": state["round"] + 1,
             "status": "active",
             "stop_decision": None,

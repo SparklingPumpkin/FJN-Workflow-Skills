@@ -41,6 +41,18 @@ DESIGN_REVIEW_CHECKS = {
     "goal_aligned",
     "tree_relation_justified",
 }
+DECISION_REVIEW_CHECKS = {
+    "problem_coverage_representative",
+    "counterexample_addressed",
+    "experiment_worth_cost",
+}
+
+
+def design_review_checks(design: dict[str, Any]) -> set[str]:
+    """Keep historical approval contracts intact; new designs add value checks."""
+    return DESIGN_REVIEW_CHECKS | (DECISION_REVIEW_CHECKS if "decision_contract" in design else set())
+
+
 EVOLUTION_REVIEW_CHECKS = {
     "verdicts_evidence_grounded",
     "actions_match_results",
@@ -296,6 +308,9 @@ def validate_design(
             unknown = sorted(set(map(str, solution.get("acceptance_ids", []))) - acceptance_ids)
             if unknown:
                 errors.append(f"solutions[{index}].acceptance_ids contains unknown IDs: {unknown}")
+    from decision_quality import validate_decision_design
+
+    errors.extend(validate_decision_design(design))
     return errors
 
 
@@ -536,6 +551,9 @@ def validate_evaluation(
             errors.append("incumbent_update.solution_id must reference a selected solution")
         if evaluation.get("goal_met") is True and action not in {"replace", "augment"}:
             errors.append("goal_met=true requires replacing or augmenting the incumbent")
+    from decision_quality import validate_decision_progress
+
+    errors.extend(validate_decision_progress(evaluation, design))
     return errors
 
 

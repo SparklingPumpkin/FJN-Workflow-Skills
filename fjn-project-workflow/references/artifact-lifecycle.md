@@ -60,6 +60,12 @@ inventory 写在 run 外的现有目录，避免扫描自身。普通评估 JSON
 
 `recent_days` 至少七天。`review_after` 不得早于运行终结/最近实际产物或数值日志更新加保护期，可以更晚。**补评估、叙述勘误与清单生成本身不重置时钟**；新增实验产物、续训和活动日志重置。明确待恢复、排队、评估或交付中的实验仍保留，不因到期自动可删。
 
+### 用户明确授权提前退役
+
+用户明确要求本轮实验立即退役时，可用 `authorize-artifact-retirement --authorization-file <project-relative.json>` 追加精确文件授权，随后仍执行扫描、逐文件评估、计划、外部删除和回执。它不修改全局七天策略，也不执行删除。
+
+授权文件使用 schema_version 1，包含终态 `run_ids`、`files`（每项为工具清单的精确 `path` 与完整 `identity`）、`waive_recent_protection: true`、非空 `reason` 和 `authorization_evidence`。只有同次明确退役的终态运行之间的旧输入与临时保留允许解除；新增或范围外消费者会撤销对应例外。保护包、登记结论证据、最小复现材料、符号链接和共享文件仍禁止删除。身份变化不继承旧授权，不伪造日期或覆盖旧评估。并行任务只新增保护路径且不改变清单阈值或保护期时，复用原清单，但逐文件按最新保护检查；保护减少、阈值或保护期变化仍需重新扫描。
+
 ## 三、关联历史复评
 
 登记 run 用 `--artifact-input <exact-file-or-directory>` 列出实际加载的场景状态、delta、refiner 等，可重复。输入立即作为已知依赖保护；若属于已有 run，工具自动加入关联范围。`--related-run-id <old-run>` 补充被比较/替代的旧 run。

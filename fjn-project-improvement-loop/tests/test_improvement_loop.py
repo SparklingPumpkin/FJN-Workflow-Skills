@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import shutil
 from datetime import datetime, timedelta, timezone
 import sys
 import tempfile
@@ -15,12 +16,13 @@ sys.path.insert(0, str(SCRIPTS_DIR))
 sys.path.insert(0, str(SKILL_DIR.parent / "fjn-project-workflow/scripts"))
 
 from improvement_loop_guard import validate_stage  # noqa: E402
-from improvement_loop_next import advance, init_project, migrate_v1, stop  # noqa: E402
+from improvement_loop_next import advance, init_project, migrate_v1, revise, stop  # noqa: E402
 from improvement_loop_policy import (  # noqa: E402
     DESIGN_REVIEW_CHECKS,
     EVOLUTION_REVIEW_CHECKS,
     ValidationError,
     artifact_digest,
+    design_review_checks,
     load_json,
     validate_review,
     write_json,
@@ -122,6 +124,30 @@ class SixStageLoopTests(unittest.TestCase):
                 },
             }
         )
+        design["decision_contract"] = {
+            "schema_version": 1,
+            "coverage": {
+                "required_slices": ["信息缺失区域", "正常区域"],
+                "cases": [
+                    {"slice": "信息缺失区域", "role": "failure", "evidence": ["baseline.json::记录缺失区域失败"]},
+                    {"slice": "正常区域", "role": "control", "evidence": ["baseline.json::记录正常对照"]},
+                ],
+                "scope_limits": "仅当前固定评估数据，不外推其他场景",
+            },
+            "strongest_counterexample": {
+                "observation": "部分有信息的区域也会失败，容量不足仍需区分",
+                "evidence": ["baseline.json::保留不同解释的反例"],
+            },
+            "selection": {
+                "cheapest_alternative": "只读检查输入是否缺失",
+                "why_selected": "已确认缺失，需受控干预区分信息与容量",
+                "parallel_basis": "单项受控实验，串行执行",
+            },
+        }
+        solution["mechanism_check"] = {
+            "affected_acceptance_ids": ["ACC-001"], "invariant_acceptance_ids": [],
+            "explanation": "信息输入影响被测分数", "evidence": ["baseline.json::输入与分数的测量路径"],
+        }
         design["selection_reason"] = "直接命中当前根问题"
         write_json(design_path, design)
         goal = load_json(self.control / "goal.json")
@@ -141,6 +167,9 @@ class SixStageLoopTests(unittest.TestCase):
         *,
         critic_decision: str = "approve",
     ) -> None:
+        if target_kind == "design":
+            design_path = self.control / f"rounds/round-{self.state()['round']:03d}/design.json"
+            checks = design_review_checks(load_json(design_path))
         path = self.control / f"rounds/round-{self.state()['round']:03d}/{filename}"
         review = load_json(path)
         failed_check = sorted(checks)[0]
@@ -246,6 +275,11 @@ class SixStageLoopTests(unittest.TestCase):
                 "claim_update": "观点得到支持",
                 "next_implication": "结束" if goal_met else "继续精进",
                 "evidence": ["result.json::证明方案效果"],
+                "decision_progress": {
+                    "kind": "goal_improved", "before": "基线分数未达到当前结果",
+                    "after": "受控分数改善，值得继续信息融合",
+                    "evidence": ["result.json::固定协议下得到真实改善"],
+                },
             }
         ]
         evaluation["acceptance_results"][0].update(
@@ -317,6 +351,74 @@ class SixStageLoopTests(unittest.TestCase):
     def test_init_starts_at_assess_target(self) -> None:
         self.assertEqual(self.state()["stage"], "assess_target")
         self.assertTrue((self.control / "rounds/round-001/design.json").is_file())
+
+    def test_new_loop_cannot_disable_decision_checks_by_removing_contract(self) -> None:
+        self.prepare_goal()
+        self.pass_guard()
+        advance(self.project)
+        self.prepare_design()
+        path = self.control / "rounds/round-001/design.json"
+        design = load_json(path)
+        del design["decision_contract"]
+        write_json(path, design)
+        errors, _ = validate_stage(self.project, "design_solutions")
+        self.assertTrue(any("new loops require decision_contract" in x for x in errors))
+
+    def test_revise_starts_a_new_search_period(self) -> None:
+        self.prepare_goal()
+        stop(self.project, "no_high_value_branch", "旧目标结束")
+        revise(self.project)
+        self.assertEqual(self.state()["round"], 2)
+        self.assertEqual(self.state()["search_start_round"], 2)
+        self.assertEqual(self.state()["decision_policy_version"], 1)
+
+    def test_legacy_design_and_review_remain_compatible(self) -> None:
+        self.prepare_goal()
+        self.pass_guard()
+        advance(self.project)
+        self.prepare_design()
+        state = self.state()
+        del state["decision_policy_version"]
+        self.write_state(state)
+        path = self.control / "rounds/round-001/design.json"
+        design = load_json(path)
+        del design["decision_contract"]
+        write_json(path, design)
+        self.prepare_review("design_review.json", "design", artifact_digest(
+            load_json(self.control / "goal.json"), design
+        ), DESIGN_REVIEW_CHECKS)
+        self.pass_guard()
+        advance(self.project)
+        self.assertEqual(self.state()["stage"], "execute_via_workflow")
+
+    def test_stagnation_blocks_guard_and_direct_tree_prepare(self) -> None:
+        self.advance_to_evaluation()
+        self.prepare_evaluation(False)
+        first = self.control / "rounds/round-001"
+        path = first / "evaluation.json"
+        evaluation = load_json(path)
+        evaluation["solution_results"][0]["decision_progress"]["kind"] = "none"
+        write_json(path, evaluation)
+        self.pass_guard()
+        advance(self.project)
+        second = self.control / "rounds/round-002"
+        shutil.copytree(first, second)
+        for name in ("design", "execution", "evaluation", "evolution", "design_review", "evolution_review"):
+            path = second / f"{name}.json"
+            payload = load_json(path)
+            payload["round_id"] = "round-002"
+            write_json(path, payload)
+        state = self.state()
+        state["round"] = 2
+        self.write_state(state)
+        design = load_json(second / "design.json")
+        self.prepare_review("design_review.json", "design", artifact_digest(
+            load_json(self.control / "goal.json"), design
+        ), design_review_checks(design))
+        with self.assertRaisesRegex(ValueError, "two rounds without decision progress"):
+            self.prepare_evolution("refine")
+        errors, _ = validate_stage(self.project, "evolve_tree")
+        self.assertTrue(any("two rounds without decision progress" in x for x in errors))
 
     def test_project_workflow_guard_path_exists(self) -> None:
         from improvement_loop_guard import PROJECT_WORKFLOW_GUARD

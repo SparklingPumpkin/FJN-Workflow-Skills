@@ -33,6 +33,8 @@
 
 Critic 保留完整布尔 checks 映射，以迫使逐项审查。拒绝时 false checks 与 objections 的 `check` 字段必须完全对应；不为少量 token 节省退化成隐式“其余均通过”。
 
+新设计增加轻量 `decision_contract`：覆盖声明范围的失败/对照、最强反例、最便宜替代实验与并行理由；selected 方案声明作用验收项与不变量。审查者先看原始证据，额外判断问题覆盖、反例与机会成本。字段合同和示例集中在 [决策质量规则](./references/decision-quality.md)，不新增阶段或账本。
+
 ### 2.3 `execute_via_workflow`
 
 本 Skill 把选中方案交给 `fjn-project-workflow`。不同主假设对应不同 candidate，实际执行对应 run。项目工作流承担并行调度、资源、恢复、证据和晋级。
@@ -47,6 +49,8 @@ Critic 保留完整布尔 checks 映射，以迫使逐项审查。拒绝时 fals
 - 方案是否有效；
 - 背后的观点是否被支持；
 - 实验本身是否有效。
+
+新设计还须说明 `decision_progress`：真正改善目标、裁决关键解释、补齐可验证的观测能力，或无进展。有效负结果可以改变决策；图表数量和重复失败本身不是进展。
 
 ### 2.5 `evolve_tree`
 
@@ -84,6 +88,8 @@ assess_target
 
 `reroot` 用于根问题、评估有效性、数据充分性或项目能力假设被推翻。普通失败只剪枝或精进，不回到阶段 1。
 
+新策略连续两轮没有决策进展时，要求附证据的搜索重评并 reroot，或正式停止；不是按 failed 次数触发。已 reroot 后重新计数。不允许借重评放宽用户目标，或只换名称继续原变体。此门由 guard 与 tree prepare/apply 共同检查。
+
 ## 5. 为什么需要代码状态机
 
 仅靠提示词无法保证：
@@ -105,6 +111,8 @@ assess_target
 - 旧轮次批准不能重放到当前轮次；
 - guard 后修改会在推进时被重新校验；
 - Critic 不可用时流程阻塞，不降级为单角色自审。
+
+新建 loop state 的 `decision_policy_version: 1` 防止删除决策合同降级；旧 state、旧设计和旧签名不改写，新轮次使用新模板后开始记录进展。格式与状态检查不能证明样本代表性、进展真实性或因果解释，仍需独立阅读原始证据。
 
 Critic 的上下文独立性和只读性由 VS Code Custom Agent 的独立调用与工具限制提供。当前 Custom Agent 接口不会向目标项目签发不可伪造的身份凭证，因此落盘 JSON 本身不能密码学证明“确实由 Critic 写出”。主编排 Agent 被明确禁止代写 Critic 结果；若未来运行时提供可验证的 subagent attestation，再把它加入 review 合同。当前不为制造虚假安全感而自建秘密或伪签名机制。
 

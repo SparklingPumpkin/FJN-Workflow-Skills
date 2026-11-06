@@ -374,6 +374,8 @@ def apply_event(state: dict[str, Any] | None, event: dict[str, Any]) -> dict[str
     elif event_type == 'artifact_reassessment_requested':
         from artifact_inventory import request_reassessments
         request_reassessments(state, payload['source_run_id'], payload['target_run_ids'], event)
+    elif event_type == 'artifact_retirement_authorized':
+        state.setdefault('artifact_retirements', {})[event['event_id']] = deepcopy(payload['record'])
     elif event_type == 'artifact_cleanup_planned':
         state.setdefault('artifact_cleanup_plans', {})[event['event_id']] = deepcopy(payload['record'])
     elif event_type == 'artifact_cleanup_recorded':
@@ -859,7 +861,7 @@ def audit_state(project_root: Path, control_dir: str = DEFAULT_CONTROL_DIR, chec
             if not source.is_file() or sha256_file(source) != inventory['sha256']:
                 report.error(f'Artifact inventory missing/changed for {run_id}; rescan instead')
     if check_filesystem:
-        for collection in ('artifact_cleanup_plans', 'artifact_cleanup_results'):
+        for collection in ('artifact_cleanup_plans', 'artifact_cleanup_results', 'artifact_retirements'):
             for record in state.get(collection, {}).values():
                 if collection == 'artifact_cleanup_results': record = record['record']
                 source = project_root / record['reference']

@@ -34,7 +34,9 @@
       "id": "SOL-001",
       "kind": "optimize",
       "status": "proposed",
-      "acceptance_ids": ["ACC-001"],
+      "acceptance_ids": [
+        "ACC-001"
+      ],
       "claim": "",
       "rationale": "",
       "change_or_test": "",
@@ -48,9 +50,32 @@
         "parent_id": null,
         "rationale": "",
         "evidence": []
+      },
+      "mechanism_check": {
+        "affected_acceptance_ids": [],
+        "invariant_acceptance_ids": [],
+        "explanation": "",
+        "evidence": []
       }
     }
   ],
   "selection_reason": "",
-  "deferred": []
+  "deferred": [],
+  "decision_contract": {
+    "schema_version": 1,
+    "coverage": {
+      "required_slices": [],
+      "cases": [],
+      "scope_limits": ""
+    },
+    "strongest_counterexample": {
+      "observation": "",
+      "evidence": []
+    },
+    "selection": {
+      "cheapest_alternative": "",
+      "why_selected": "",
+      "parallel_basis": ""
+    }
+  }
 }

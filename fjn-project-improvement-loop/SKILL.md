@@ -96,6 +96,8 @@ python ./scripts/improvement_loop_next.py status --project-root <project>
 
 不要在这里预设解决方案。验收标准必须能直接判定实验是否成功。
 
+首次设计前，用少量已有失败案例和正常/基线对照核对问题范围：覆盖相关输入、视角、时段或失败类型，区分不同症状。范围按任务决定，不规定固定相机数或样本数；不能因为某个例子容易分析就代表整体。缺少材料时，先做补齐观测的 probe，不制造已覆盖的证据。用户提出纯前馈、自动发现、无人工定位等要求时，分别作为约束记录，人工评价区域不代表算法具备自动定位能力。
+
 ## 阶段 2：深度思考并设计方案
 
 首次进入本阶段时读取 [fjn-project-workflow](../fjn-project-workflow/SKILL.md) 的执行边界；同一会话内文件未变化时不重复加载。阶段 1 不需要加载完整 Workflow Skill。
@@ -103,9 +105,9 @@ python ./scripts/improvement_loop_next.py status --project-root <project>
 读取代码、基线、失败历史和 `solution_tree.json`。按以下顺序思考，不能从熟悉的解法反推根因：
 
 1. **观测**：只记录当前项目已发生的事实，每项带 `reference::what-it-proves` 证据；
-2. **根因机制**：说明哪个机制如何导致验收缺口，并给出推翻条件；
+2. **根因机制**：沿处理链定位异常首次出现的环节，引用该处异常及此前正常的证据，解释如何导致验收缺口并给出推翻条件；定位不足时列为未知，不把症状当根因。在现有 `root_cause` 中区分推测、观测支持和干预验证；
 3. **竞争解释**：至少保留一个不同解释，写出不同预测和区分观测；
-4. **决定性未知**：指出哪个未知会改变路线，以及最低成本 probe；
+4. **决定性未知**：指出哪个未知会改变路线，以及能区分解释的最小实验；用现有 `cheapest_probe` 和 `confounds_and_controls` 说明必要变化与保持不变的条件。最小指验证范围，不只是成本低或改动少；
 5. **方案生成**：只生成能直接作用于根因或区分关键解释的少量候选；
 6. **树关系**：声明新根、精进或分裂；精进/分裂必须引用父节点和支持证据；
 7. **选择**：说明为什么现在选择这些方案，其他候选放入 `deferred`。
@@ -119,11 +121,24 @@ python ./scripts/improvement_loop_next.py status --project-root <project>
 
 1. 为什么可能有效；
 2. 具体改变或观测什么；
-3. 若观点正确，应看到什么；
+3. 若观点正确，应看到什么；在 `expected_observation` 中写清本轮局部验收标准及判断方法，可用指标或明确的定性现象；
 4. 什么结果会推翻它；
 5. 支持和推翻后分别走向哪里。
 
 优先选择能命中根问题、直接改善目标或高效消除关键未知量的方案。不得为了凑并行数量选择低价值实验。
+
+从具体问题识别共同机制，在现有 `rationale` 中说明方案适用的同类问题及必要边界，避免不必要地依赖个例身份、位置或特征。独立样例是否检查由执行者按任务判断，不设强制实验门槛；泛化结论须与已有证据相符。
+
+### 实验决策价值
+
+新任务默认启用 `decision_contract`，内容与本轮设计一起签名，不另建账本。完整字段与边界见 [决策质量规则](./references/decision-quality.md)，首次填写新设计或出现连续无进展时读取。
+
+- **问题覆盖**：在 `coverage` 中登记与拟声明范围相符的已有失败证据、对照和适用范围。恢复后可直接引用已保存证据；不为填表重渲染。局部收益不能外推到未检查的分组。
+- **作用机制**：每个 selected 方案填写 `mechanism_check`，说明哪些验收项可能改变、哪些保持不变；无法影响目标的改动不能充当该目标的 optimize，可转为有效 probe。
+- **机会成本**：比较能改变路线的最便宜替代实验，说明为什么现在不先做它。已有证据指向具体故障环节时，优先直接干预验证；跳过须说明理由。多个分支依赖同一未知时，优先补齐共同观测能力。
+- **并行依据**：不同预测的机制验证适合并行；机制已确认后的参数搜索也适合并行。共同前提未验证的相似变体不因资源空闲而获得优先级。实际资源仍由 workflow 调度。
+
+代码只能检查覆盖声明、引用和逻辑矛盾，不能证明样本代表性、机制正确或实验具有信息量；这些仍由主角色和 Critic 根据原始证据判断。
 
 树的父子关系必须有语义依据。不能确认承接关系时使用 `new_root`，不随意连线。
 
@@ -137,6 +152,8 @@ python ./scripts/improvement_loop_review.py \
 ```
 
 Critic 反驳根因证据、竞争解释、方案到根因的因果链、混杂变量、可证伪性、验收映射和树边依据。Critic 必须逐项输出布尔 checks；`reject` 时，每个 false check 都要有以 `check` 指向它的 objection。将 objections 原样保存在 `design_review.json`；proposer 必须逐项回应、修改设计、生成新摘要，并在新的 Critic 上下文复审。
+
+对于启用 `decision_contract` 的设计，Critic 增加三项检查：`problem_coverage_representative`、`counterexample_addressed`、`experiment_worth_cost`。先从用户目标、原始失败材料及对照独立寻找最强反例，再看 proposer 的解释；除“设计能否成立”，还要回答“为何比更便宜的替代实验值得做”。`improvement_loop_review.py` 输出本次确切 `required_checks`，不把新检查追溯加到历史签名。
 
 最后一轮必须由 proposer 和 Critic 同时 `approve` 同一 SHA-256，所有检查均通过且没有未解决 objection。guard 会重新计算摘要；批准后修改任何方案内容都会使双签失效。Critic 不可用时不得由 proposer 代签，应以 `blocked` 停止或等待可用。
 
@@ -159,12 +176,16 @@ Critic 的独立上下文和只读权限由 Custom Agent 运行时提供；revie
 
 填写 `evaluation.json`，逐项回答：
 
-- 最终验收指标发生了什么变化；
+- 本轮局部标准是否满足，以及最终验收指标发生了什么变化；前者写入 `effect_on_goal`，后者仍按 `acceptance_results` 逐项记录；
 - 方案是 `successful`、`failed`、`partial`、`inconclusive` 还是 `invalid_run`；
-- 原观点得到支持、被推翻还是仍无法判断；
+- 原观点得到支持、被推翻还是仍无法判断，在 `claim_update` 中更新根因的证据状态；
 - 对下一轮意味着什么。
 
 `invalid_run` 表示实验执行无效，不得据此删除方案分支。只有所有验收项通过时，才能将 `goal_met` 设为 `true`。
+
+分别记录局部效果和整体影响；方案部分达标可用 `partial`，probe 成功仅表示其验证目标完成。不因单一整体指标抹去局部进展，也不用局部成功替代最终验收；局部标准不改变 `goal.json` 或 Workflow 的冻结验收合同。
+
+新设计的每个 `solution_results` 还须填写 `decision_progress`：`kind` 为 `goal_improved / hypothesis_resolved / observability_unblocked / none`，并给出 `before`、`after` 及支持进展的 `evidence`。它分别表示可验收改善、关键解释被裁决、必要观测能力已验证可用、或未改变判断。有效负结果可以是进展；新增图表、代码量、版本号或普通指标波动本身不是进展。相同证据不能反复算作新的发现；Critic 须核对具体改变了哪个判断、能力或后续选择。
 
 ## 阶段 5：演化方案树
 
@@ -177,6 +198,8 @@ Critic 的独立上下文和只读权限由 Custom Agent 运行时提供；revie
 - `reroot`：连续失败或新证据表明根问题、评估或项目能力假设错误。
 
 `invalid_run` 或 `inconclusive` 不得直接剪枝。剪枝必须声明失败证据和 `reopen_when`；精进或分裂必须声明下一分支方向。
+
+连续两轮均无 `decision_progress` 时，暂停当前整体搜索的参数细化：填写 `search_reassessment`（`why_stalled`、`changed_approach`、`evidence`），至少一个动作设为 `reroot`，完成收尾后回到 `assess_target`；也可以按既有停止流程结束。不是两次 failed 就强制重定根：有效排除关键解释、补齐观测能力都算进展。已经重定根则重新计数。并行中一条线有进展不代表其他线应继续，Critic 仍需按分支审查机会成本。重新评估不得顺带放宽用户目标，也不允许只改分支名称或复述原计划。
 
 正式树不手工编辑。先确定性生成拟议树：
 
@@ -235,6 +258,8 @@ python ./scripts/improvement_loop_next.py stop \
 ```
 
 停止前，当前轮已经结束的实验也必须完成产物标记；尚未执行或仍运行的任务不伪造终态评估。终态后目标发生变化时使用 `revise` 归档旧轮次并重新开始。完整对象语义见 [六阶段设计](./HIGH_LEVEL_DESIGN.md)。
+
+预算是上限；还有剩余时间不构成继续实验的理由。新建 loop 自动启用决策校验；旧 loop/设计保持原签名与兼容性，后续采用新模板的轮次开始记录进展，不补写历史进展。不得为绕过检查删除新任务的 `decision_contract`。
 
 ## 人工确认边界
 
