@@ -1,0 +1,4 @@
+interface:
+  display_name: "项目实验知识库"
+  short_description: "通过聊天整理研究实验知识、核对来源证据、检索历史尝试并保留复现材料"
+  default_prompt: "使用 $fjn-project-knowledge 整理这个项目的实验知识，保留结论、原始证据和复现入口，并回答哪些方法已经尝试过。"
